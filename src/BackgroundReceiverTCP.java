@@ -13,6 +13,9 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     @Override
     protected String doInBackground() throws Exception {
         System.out.println("TCP working!");
-        return null;
+        while(true) {
+            String msg = input.readUTF();
+            System.out.println("server says: " + msg);
+        }
     }
 }

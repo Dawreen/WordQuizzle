@@ -55,6 +55,9 @@ public class ClientGUI extends JFrame {
         BackgroundReceiverUDP receiverUDP = new BackgroundReceiverUDP(this, socketUDP);
         receiverUDP.execute();
 
+        sendTCP("test");
+        sendUDP("test UDP");
+
         // TODO: 20/06/2020 registration
         // TODO: 20/06/2020 login
         // TODO: 20/06/2020 logout
@@ -91,6 +94,7 @@ public class ClientGUI extends JFrame {
     }
     private void sendUDP(String msg) {
         try {
+            //noinspection CharsetObjectCanBeUsed
             byte[] data = msg.getBytes("UTF-8");
             DatagramPacket output = new DatagramPacket(data, data.length, address, UDP_PORT);
             socketUDP.send(output);
@@ -111,6 +115,7 @@ public class ClientGUI extends JFrame {
             RemoteObj = registry.lookup("Registration");
             stub = (RegIntWQ) RemoteObj;
             boolean response = stub.registration(name, password);
+            //noinspection StatementWithEmptyBody
             if (response) {
 // TODO: 20/06/2020 if registration TRUE
             } else {
