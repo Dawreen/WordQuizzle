@@ -11,17 +11,31 @@ import java.util.concurrent.Executors;
 public class Server implements RegIntWQ, Runnable {
     private Registry registry;
     static final int PORT = 34522;
+    private UserCollection userInfo;
+    private Dictionary dictionary;
+
+    private ServerSocket socketTCP;
+
+    private ExecutorService executorTCP;
+    private ExecutorService executorUDP;
+
+    public Server(String userFile, String passFile, String dictionary) {
+        this.userInfo = new UserCollection(userFile, passFile);
+        this.dictionary = new Dictionary(dictionary);
+    }
 
     @Override
     public void run() {
-        ExecutorService executorTCP = null;
-        ExecutorService executorUDP;
+        this.executorTCP = null;
 
-        try (ServerSocket socketTCP = new ServerSocket(PORT)){
-            executorTCP = Executors.newCachedThreadPool();
-            executorUDP = Executors.newCachedThreadPool();
+        try (ServerSocket socketTCP = new ServerSocket(PORT)) {
+            this.socketTCP = socketTCP;
 
-            executorUDP.submit(new UDPGameServer()); // test for UDP connection
+            this.executorTCP = Executors.newCachedThreadPool();
+            this.executorUDP = Executors.newCachedThreadPool();
+
+            UDPGameServer testUDP = new UDPGameServer(dictionary.getWords(5));
+            executorUDP.submit(testUDP); // test for UDP connection
 
             while (!Thread.currentThread().isInterrupted()){
                 Session session = new Session(socketTCP.accept(), this);
@@ -80,5 +94,13 @@ public class Server implements RegIntWQ, Runnable {
     public boolean registration(String name, String password) throws RemoteException {
 // TODO: 20/06/2020 registration
         return false;
+    }
+
+    public void shutdown() throws IOException {
+        Thread.currentThread().interrupt();
+        socketTCP.close();
+        this.executorTCP.shutdown();
+        this.executorUDP.shutdown();
+        closeRMI();
     }
 }

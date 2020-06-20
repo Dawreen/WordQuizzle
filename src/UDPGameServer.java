@@ -4,8 +4,16 @@ import java.net.DatagramSocket;
 
 public class UDPGameServer extends UDPServer{
     public final static int DEFAUL_PORT = 7;
+
+    private String[] words;
+
     public UDPGameServer() {
         super(DEFAUL_PORT);
+    }
+
+    public UDPGameServer(String[] words) {
+        super(DEFAUL_PORT);
+        this.words = words;
     }
 
     @Override
@@ -16,5 +24,12 @@ public class UDPGameServer extends UDPServer{
         DatagramPacket out = new DatagramPacket(packet.getData(), packet.getLength(),
                 packet.getAddress(), packet.getPort());
         socket.send(out);
+
+        for (String each : this.words) {
+            byte[] data = each.getBytes("UTF-8");
+            DatagramPacket outword = new DatagramPacket(data, data.length,
+                    packet.getAddress(), packet.getPort());
+            socket.send(outword);
+        }
     }
 }
