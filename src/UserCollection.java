@@ -1,14 +1,16 @@
 import com.google.gson.Gson;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Set;
 
 public class UserCollection {
     private HashMap<String, User> allUsers;
     private File userFile;
 
-    private HashMap<String, String> passwords;
+    private HashMap<String, char[]> passwords;
     private File passFile;
 
     /**
@@ -50,7 +52,7 @@ public class UserCollection {
                 if (passArray != null) { // controllo che il file passato non sia vuoto
                     this.passwords = new HashMap<>(passArray.length / 2);
                     for (int i = 0; i < passArray.length; i += 2) {
-                        this.passwords.put(passArray[i], passArray[i + 1]);
+                        this.passwords.put(passArray[i], passArray[i + 1].toCharArray());
                     }
                 }
             }
@@ -105,5 +107,40 @@ public class UserCollection {
             System.err.println("UPDATEFILE - exception");
             e.printStackTrace();
         }
+    }
+
+    private synchronized void registrationUpdate (){
+        Set<String> setUserName = this.passwords.keySet();
+        String[] auxString = new String[setUserName.size()*2];
+        int i = 0;
+        for (String each : setUserName) {
+            auxString[i] = each;
+            auxString[++i] = Arrays.toString(this.passwords.get(each));
+            i++;
+        }
+        try (Writer writer = new FileWriter(passFile, false)) {
+            Gson gson = new Gson();
+            String passString = gson.toJson(auxString);
+
+            writer.write(passString);
+        }catch (IOException e) {
+            System.err.println("SHUTDOWN - exception file update");
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized boolean addUser(String username, char[] password) {
+        if (this.allUsers.containsKey(username)) return false;
+        else {
+            this.allUsers.put(username, new User(username));
+            this.passwords.put(username, password);
+            updateFile();
+            registrationUpdate();
+            return true;
+        }
+    }
+
+    public synchronized boolean checkPass(String username, char[] password) {
+        return Arrays.equals(this.passwords.get(username), password);
     }
 }

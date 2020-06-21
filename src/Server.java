@@ -34,7 +34,7 @@ public class Server implements RegIntWQ, Runnable {
             this.executorTCP = Executors.newCachedThreadPool();
             this.executorUDP = Executors.newCachedThreadPool();
 
-            UDPGameServer testUDP = new UDPGameServer(dictionary.getWords(5));
+            UDPGameServer testUDP = new UDPGameServer(dictionary.getWords(5)); //test dictionary
             executorUDP.submit(testUDP); // test for UDP connection
 
             while (!Thread.currentThread().isInterrupted()){
@@ -91,9 +91,14 @@ public class Server implements RegIntWQ, Runnable {
 
     @SuppressWarnings("RedundantThrows")
     @Override
-    public boolean registration(String name, String password) throws RemoteException {
-// TODO: 20/06/2020 registration
-        return false;
+    public boolean registration(String name, char[] password) throws RemoteException {
+        if (name.isBlank() || password.length == 0) return false;
+        return this.userInfo.addUser(name, password);
+    }
+
+    public int login(String username, char[] password) {
+        userInfo.checkPass(username, password);
+        return 0;
     }
 
     public void shutdown() throws IOException {
