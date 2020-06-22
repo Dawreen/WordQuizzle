@@ -10,8 +10,10 @@ public class UserCollection {
     private HashMap<String, User> allUsers;
     private File userFile;
 
-    private HashMap<String, char[]> passwords;
+    private HashMap<String, String> passwords;
     private File passFile;
+
+    private HashMap<String, Session> online;
 
     /**
      * Inizializza l'insieme di tutti gli user e delle loro password.
@@ -21,6 +23,8 @@ public class UserCollection {
      * @param passFile string con la path delle password
      */
     public UserCollection(String userFile, String passFile) {
+        this.online = new HashMap<>();
+
         this.userFile = new File(userFile);
         this.passFile = new File(passFile);
         try {
@@ -52,7 +56,7 @@ public class UserCollection {
                 if (passArray != null) { // controllo che il file passato non sia vuoto
                     this.passwords = new HashMap<>(passArray.length / 2);
                     for (int i = 0; i < passArray.length; i += 2) {
-                        this.passwords.put(passArray[i], passArray[i + 1].toCharArray());
+                        this.passwords.put(passArray[i], passArray[i + 1]);
                     }
                 }
             }
@@ -115,7 +119,7 @@ public class UserCollection {
         int i = 0;
         for (String each : setUserName) {
             auxString[i] = each;
-            auxString[++i] = Arrays.toString(this.passwords.get(each));
+            auxString[++i] = this.passwords.get(each);
             i++;
         }
         try (Writer writer = new FileWriter(passFile, false)) {
@@ -129,7 +133,7 @@ public class UserCollection {
         }
     }
 
-    public synchronized boolean addUser(String username, char[] password) {
+    public synchronized boolean addUser(String username, String password) {
         if (this.allUsers.containsKey(username)) return false;
         else {
             this.allUsers.put(username, new User(username));
@@ -140,7 +144,29 @@ public class UserCollection {
         }
     }
 
-    public synchronized boolean checkPass(String username, char[] password) {
-        return Arrays.equals(this.passwords.get(username), password);
+    public synchronized boolean checkRegistration(String username) {
+        return this.allUsers.containsKey(username);
+    }
+    public synchronized boolean checkOnline(String username) {
+        return this.online.containsKey(username);
+    }
+    public synchronized User checkPass(String username, String password) {
+        if (this.passwords.get(username).equals(password)) {
+            return allUsers.get(username);
+        } else {
+            return null;
+        }
+    }
+
+    public synchronized void addOnline(String username, Session session) {
+        this.online.put(username, session);
+    }
+    public synchronized void removeOnline(String username) {
+        this.online.remove(username);
+    }
+
+    public synchronized void aggiungiAmicizia(String user1, String user2) {
+        this.allUsers.get(user1).addFriend(user2);
+        this.allUsers.get(user2).addFriend(user1);
     }
 }

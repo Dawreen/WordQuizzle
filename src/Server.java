@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 public class Server implements RegIntWQ, Runnable {
     private Registry registry;
     static final int PORT = 34522;
-    private UserCollection userInfo;
+    protected UserCollection userInfo;
     private Dictionary dictionary;
 
     private ServerSocket socketTCP;
@@ -89,16 +89,17 @@ public class Server implements RegIntWQ, Runnable {
          */
     }
 
-    @SuppressWarnings("RedundantThrows")
-    @Override
-    public boolean registration(String name, char[] password) throws RemoteException {
-        if (name.isBlank() || password.length == 0) return false;
-        return this.userInfo.addUser(name, password);
-    }
+    public int registration(String name, String password) {
+        // non dovrebbe mai entrare in questo if...
+        if (name.isBlank() || password.isBlank()) return 1;
 
-    public int login(String username, char[] password) {
-        userInfo.checkPass(username, password);
-        return 0;
+        if (this.userInfo.addUser(name, password)) {
+            // registrazione ok
+            return 0;
+        } else {
+            // username già presente
+            return 2;
+        }
     }
 
     public void shutdown() throws IOException {
@@ -108,4 +109,5 @@ public class Server implements RegIntWQ, Runnable {
         this.executorUDP.shutdown();
         closeRMI();
     }
+
 }

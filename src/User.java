@@ -15,8 +15,11 @@ public class User {
         return this.id;
     }
 
-    public String[] getFriends() {
-        //noinspection ToArrayCallWithZeroLengthArrayArgument
-        return this.amici.toArray(new String[this.amici.size()]);
+    public boolean addFriend(String username) {
+        return this.amici.add(username);
+    }
+
+    public ArrayList<String> getFriends() {
+        return this.amici;
     }
 }
