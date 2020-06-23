@@ -21,13 +21,15 @@ public class ClientGUI extends JFrame {
     private DataInputStream input;
     private DataOutputStream output;
     //UDP connection
-    private static final int UDP_PORT = 7;
-    private DatagramSocket socketUDP;
-    private InetAddress address;
+    // TODO: 23/06/2020 set udp_port at login
+    private int UDP_PORT;
 
     public static String HOST = "localhost";
 
     private String username;
+
+    private BackgroundReceiverTCP receiverTCP;
+    private BackgroundReceiverUDP receiverUDP;
 
     // componenti intefaccia grafica
     private JPanel mainPanel;
@@ -51,13 +53,20 @@ public class ClientGUI extends JFrame {
     private JTextField amicoTextField;
     private JButton addFriendButton;
     protected JLabel resultFriendLabel;
+    protected JList friendList;
+    protected JScrollPane allFriendScrollPanel;
+    private JButton randomButton1;
+    private JButton GameButton;
+    private JPanel gamePanel;
+    private JButton sfidaButton;
+    private JTextField player2TextField;
+    protected JLabel statusSfidaLabel;
+    protected JLabel udpLabel;
 
     /**
      * Costruttore dell'intefaccia grafica.
-     * @param socketUDP DatagramSocket per far funzionare le connessioni UDP
-     * @param address InetAddress per cominicazioni sulla connessione UDP
      */
-    public ClientGUI (DatagramSocket socketUDP, InetAddress address) {
+    public ClientGUI () {
 
         //creating the JFrame
         super("Word Quizzle");
@@ -79,14 +88,6 @@ public class ClientGUI extends JFrame {
                 logout();
             }
         });
-
-        //initializing connections
-        this.socketUDP = socketUDP;
-        this.address = address;
-
-        //threads that receive and decode messages from server
-        BackgroundReceiverUDP receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
-        receiverUDP.execute();
 
         // invoca metodo RMI
         registrationButton.addActionListener(e -> {
@@ -111,6 +112,11 @@ public class ClientGUI extends JFrame {
             String amico = this.amicoTextField.getText();
             aggiungi_amico(amico);
         });
+
+        sfidaButton.addActionListener(e -> {
+                String player2 = player2TextField.getText();
+                sfida(player2);
+        });
     } // fine metodo costruttore ClientGUI
 
     /**
@@ -120,23 +126,10 @@ public class ClientGUI extends JFrame {
     private void sendTCP(String msg) {
         try {
             this.output.writeUTF(msg);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * invia un messaggio sulla connessione UDP
-     * @param msg stringa che si vuole inviare
-     */
-    private void sendUDP(String msg) {
-        try {
-            //noinspection CharsetObjectCanBeUsed
-            byte[] data = msg.getBytes("UTF-8");
-            DatagramPacket output = new DatagramPacket(data, data.length, address, UDP_PORT);
-            socketUDP.send(output);
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (IOException | NullPointerException e) {
+            this.resutlLabel.setText("Errore di connessione!");
+            this.resutlLabel.setVisible(true);
+            // e.printStackTrace();
         }
     }
 
@@ -149,9 +142,14 @@ public class ClientGUI extends JFrame {
             this.input = new DataInputStream(socket.getInputStream());
             this.output = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
-            e.printStackTrace();
-            // TODO: 21/06/2020 set message if error
+            this.resutlLabel.setText("Errore di connessione!");
+            this.resutlLabel.setVisible(true);
+            // e.printStackTrace();
         }
+        // inizializza il ricevitore TCP, è fatto qui per ragione di scoping legato al
+        // eventDispatcher di swing
+        this.receiverTCP = new BackgroundReceiverTCP(this, this.input);
+        this.receiverTCP.execute();
     }
 
     /**
@@ -165,10 +163,13 @@ public class ClientGUI extends JFrame {
         }
     }
 
-    // TODO: 20/06/2020 login
-    /*Login di un utente​ già registrato per accedere al servizio. Il server
-    risponde con un codice che può indicare l’avvenuto login, oppure, se l’utente ha già effettuato la
-    login o la password è errata, restituisce un messaggio d’errore. */
+    /**
+     * Login di un utente già registrato per accedere al servizio.
+     * Il server risponde con un codice che può indicare l'avvenuto login, oppure
+     * un possibile errore: login già effetuato, password errata.
+     * @param username username con il quale loggarsi
+     * @param password password dell'account
+     */
     private void login(String username, char[] password) {
         if (username.isBlank()) {
             this.resutlLabel.setText("No username!");
@@ -178,10 +179,6 @@ public class ClientGUI extends JFrame {
             this.resutlLabel.setVisible(true);
         } else {
             sendTCP("login_" + username + "_" + Arrays.toString(password));
-            // inizializza il ricevitore TCP, è fatto qui per ragione di scoping legato al
-            // eventDispatcher di swing
-            BackgroundReceiverTCP receiverTCP = new BackgroundReceiverTCP(this, this.input);
-            receiverTCP.execute();
         }
     }
 
@@ -197,12 +194,11 @@ public class ClientGUI extends JFrame {
         }
     }
 
-    // TODO: 20/06/2020 aggiungi_amico
-    /* cerchia di amici di un utente. Viene creato un arco non orientato tra i due utenti (se A è amico
-       di B, B è amico di A). Il Server risponde con un codice che indica l’avvenuta registrazione
-       dell’amicizia oppure con un codice di errore, se il nickname del nodo destinazione/sorgente
-       della richiesta non esiste, oppure se è stato richiesto di creare una relazione di amicizia già
-       esistente. Non è necessario che il server richieda l’accettazione dell’amicizia da parte di nickAmico.*/
+    /**
+     * Aggiunge un utente alla cerchia degli amici.
+     * Il server risponde con un codice di successo o comunicando il tipo di errore che si è verificato.
+     * @param amico stringa con l'id dell'utente da aggiungere agli amici.
+     */
     private void aggiungi_amico(String amico) {
         if (amico != null) {
             if (!amico.isBlank())
@@ -210,9 +206,13 @@ public class ClientGUI extends JFrame {
         }
     }
 
-    // TODO: 20/06/2020 lista_amici
-    /*utilizzata da​ un utente per visualizzare la lista dei propri amici, fornendo
-    le proprie generalità. Il server restituisce un oggetto JSON che rappresenta la lista degli  amici.*/
+    /**
+     * Richiesta al server per visualizzare la lista degli amici.
+     * Il server restituisce un oggetto JSON che rappresenta la lista degli amici.
+     */
+    protected void lista_amici() {
+        sendTCP("listaamici");
+    }
 
     // TODO: 20/06/2020 sfida
     /* sfida(nickUtente, nickAmico): l’utente nickUtente intende sfidare l’utente di nome nickAmico. Il
@@ -233,6 +233,11 @@ public class ClientGUI extends JFrame {
        inviata (a causa della scadenza del timer) si assegnano 0 punti. Il punteggio ottenuto da ciascun
        partecipante alla fine della partita viene chiamato punteggio partita.  I valori espressi come K,
        N, T1, T2, X, Y e Z sono a discrezione dello studente. */
+    private void sfida(String username) {
+        sendTCP("sfida_" + username);
+        this.statusSfidaLabel.setText("in attesa...");
+        this.statusSfidaLabel.setVisible(true);
+    }
 
     // TODO: 20/06/2020 mostra_punteggio
     /* mostra_punteggio(nickUtente):​ il server restituisce il punteggio di nickUtente (chiamato
@@ -243,27 +248,20 @@ public class ClientGUI extends JFrame {
     /* mostra_classifica(nickUtente):​ Il server restituisce in formato JSON la classifica calcolata in
        base ai punteggi utente ottenuti da nickUtente e dai suoi amici. */
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
-            InetAddress address = InetAddress.getByName(SERVER_ADDRESS);
-            DatagramSocket socketUDP = new DatagramSocket();
-            socketUDP.connect(address, UDP_PORT);
-
-            JFrame frame = new ClientGUI(socketUDP, address);
+            JFrame frame = new ClientGUI();
             frame.setVisible(true);
 
     } //fine main
 
     /**
-     * metodo RMI per la registrazione
+     * Metodo RMI per la registrazione.
+     * Il server risponde con un codice di successo se la registrazione è avvenuta o con un messaggio di
+     * errore in caso il username sia già in uso o la password sia vuoto.
      * @param name stringa del nome che verà usata per identificare l'utente
      * @param password password che permetterà l'accesso al login
      */
-    /*Registrazione di un utente ​ : per inserire un nuovo utente, il server mette a disposizione una
-      operazione ​registra_utente(nickUtente,password). ​ Il server risponde con un codice che può
-      indicare l’avvenuta registrazione, oppure, se il nickname è già presente, o se la password è
-      vuota, restituisce un messaggio d’errore. Come specificato in seguito, le registrazioni sono tra
-      le informazioni da persistere. */
     private void registration(String name, char[] password) {
         this.resutlLabel.setVisible(true);
         if (name.isBlank() || password.length == 0) {
@@ -295,8 +293,11 @@ public class ClientGUI extends JFrame {
      * Il metodo modifica la GUI in modo da passare ad un nuovo pannello
      * @param username stringa che contiene il username con il quale si è fatto login
      */
-    public void loginGUI(String username) {
+    public void loginGUI(String username, String port) {
         this.username = username;
+        this.UDP_PORT = Integer.parseInt(port);
+
+        lista_amici();
 
         this.usernameTextField.setText("");
         this.passwordField.setText("");
@@ -309,6 +310,10 @@ public class ClientGUI extends JFrame {
         this.setLocationRelativeTo(null);
         this.activityPannel.setVisible(true);
     }
+
+    /**
+     * Passaggio al pannello iniziale del login.
+     */
     private void logoutGUI() {
         this.accessPanel.setVisible(true);
 
@@ -318,4 +323,5 @@ public class ClientGUI extends JFrame {
         this.setSize(360, 200);
         this.setLocationRelativeTo(null);
     }
+
 }

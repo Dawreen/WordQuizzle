@@ -12,7 +12,7 @@ public class Server implements RegIntWQ, Runnable {
     private Registry registry;
     static final int PORT = 34522;
     protected UserCollection userInfo;
-    private Dictionary dictionary;
+    protected Dictionary dictionary;
 
     private ServerSocket socketTCP;
 
@@ -33,9 +33,6 @@ public class Server implements RegIntWQ, Runnable {
 
             this.executorTCP = Executors.newCachedThreadPool();
             this.executorUDP = Executors.newCachedThreadPool();
-
-            UDPGameServer testUDP = new UDPGameServer(dictionary.getWords(5)); //test dictionary
-            executorUDP.submit(testUDP); // test for UDP connection
 
             while (!Thread.currentThread().isInterrupted()){
                 Session session = new Session(socketTCP.accept(), this);
@@ -100,6 +97,10 @@ public class Server implements RegIntWQ, Runnable {
             // username già presente
             return 2;
         }
+    }
+
+    public void submitGame(UDPGameServer game) {
+        this.executorUDP.submit(game); // test for UDP connection
     }
 
     public void shutdown() throws IOException {

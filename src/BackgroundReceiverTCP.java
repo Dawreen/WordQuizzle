@@ -1,3 +1,5 @@
+import com.google.gson.Gson;
+
 import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -8,10 +10,11 @@ import java.net.Socket;
  * Classe che riceve i messaggi TCP dal server.
  */
 public class BackgroundReceiverTCP extends SwingWorker<String, String> {
-    private ClientGUI gui;
+    private final ClientGUI gui;
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
+    private boolean shutdown = false;
 
     public BackgroundReceiverTCP(ClientGUI gui, DataInputStream input) {
         this.gui = gui;
@@ -20,7 +23,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
 
     @Override
     protected String doInBackground() throws IOException {
-        System.out.println("TCP receiver working!");
+        System.out.println("TCP receiver started!");
 
         do {
             String msg = this.input.readUTF();
@@ -31,16 +34,28 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     loginERR(msgSplit[1]);
                     break;
                 case "loginok":
-                    gui.loginGUI(msgSplit[1]);
+                    gui.loginGUI(msgSplit[1], msgSplit[2]);
                     break;
                 case "amicoerr":
                     amicoERR(msgSplit[1]);
                     break;
                 case "amicook":
-                    // TODO: 22/06/2020 amico aggiunto con successo
+                    gui.resultFriendLabel.setText("Amico aggiunto con successo!");
+                    gui.resultFriendLabel.setVisible(true);
+                    gui.lista_amici();
+                    break;
+                case "listaamici":
+                    lista_amici(msgSplit[1]);
+                    break;
+                case "sfidaerr":
+                    sfidaERR(msgSplit[1]);
+                    break;
+                case "sfidato":
+                    sfidato(msgSplit[1]);
                     break;
             }
-        } while (true);
+        } while (!shutdown);
+        return null;
     }
 
     /**
@@ -58,6 +73,28 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             gui.resultFriendLabel.setText("Già presente tra gli amici.");
         }
         gui.resultFriendLabel.setVisible(true);
+    }
+
+    private void sfidaERR(String err) {
+        System.out.println("in error sfida");
+        if (err.equals("1")) {
+            // l'utente sfidato non fa parte della cerchia degli amici
+            gui.statusSfidaLabel.setText("Utente non è tra amici!");
+            gui.statusSfidaLabel.setVisible(true);
+        }
+        if (err.equals("2")) {
+            // l'utente che si vuole sfidare è offline
+            gui.statusSfidaLabel.setText("Utente offline!");
+            gui.statusSfidaLabel.setVisible(true);
+        }
+        if (err.equals("3")) {
+            // l'utente ha rifiutato la sfida
+            gui.statusSfidaLabel.setText("Utente ha rifiutato la sfida!");
+            gui.statusSfidaLabel.setVisible(true);
+        }
+    }
+    private void sfidato(String username) {
+        System.out.println("sfidato da " + username);
     }
 
     /**
@@ -80,5 +117,24 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             gui.resutlLabel.setText("Utente non registrato!");
         }
         gui.resutlLabel.setVisible(true);
+    }
+
+    /**
+     * Decodifica una stringa in formato JSON contetente la lista degli amici in arrivo dal server
+     * @param allAmici stringa da decodificare.
+     */
+    private void lista_amici(String allAmici) {
+        DefaultListModel<String> listModel = new DefaultListModel<>();
+        String[] arrFriends = new Gson().fromJson(allAmici, String[].class);
+        for (String each : arrFriends) {
+            listModel.addElement(each);
+        }
+        gui.friendList = new JList();
+        gui.friendList.setModel(listModel);
+        gui.allFriendScrollPanel.setViewportView(gui.friendList);
+    }
+
+    public void shutdown() {
+        this.shutdown = true;
     }
 }

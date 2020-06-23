@@ -164,9 +164,13 @@ public class UserCollection {
     public synchronized void removeOnline(String username) {
         this.online.remove(username);
     }
+    public synchronized Session getSession(String username) {
+        return this.online.get(username);
+    }
 
     public synchronized void aggiungiAmicizia(String user1, String user2) {
         this.allUsers.get(user1).addFriend(user2);
         this.allUsers.get(user2).addFriend(user1);
+        updateFile();
     }
 }

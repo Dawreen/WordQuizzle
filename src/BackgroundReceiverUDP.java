@@ -15,6 +15,7 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
     @Override
     protected String doInBackground() {
         System.out.println("UDP working!");
+        System.out.println("receiverUDP " + this.socket.toString());
 
         byte[] buffer = new byte[65507];
         while (true) {

@@ -1,13 +1,25 @@
+import com.google.gson.Gson;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Collection;
 
 public class Session implements Runnable{
     private Server server;
     private Socket socket;
 
+    DataInputStream input;
+    DataOutputStream output;
+
     private User user;
+    private int UDP_PORT;
+    private InetAddress address;
+    private DatagramSocket socketUDP;
 
     private boolean shutdown = false;
 
@@ -15,6 +27,7 @@ public class Session implements Runnable{
         this.server = server;
         this.socket = socket;
         this.user = null;
+        this.UDP_PORT = (int)((Math.random())*((65535 - 1024) + 1)) + 1024;
     }
 
     @Override
@@ -22,6 +35,9 @@ public class Session implements Runnable{
         System.out.println("Session working!");
         try (DataInputStream input = new DataInputStream(this.socket.getInputStream());
              DataOutputStream output = new DataOutputStream(this.socket.getOutputStream())) {
+
+            this.input = input;
+            this.output = output;
 
             String msg;
             String res;
@@ -34,10 +50,11 @@ public class Session implements Runnable{
                     case "login" -> login(msgSplit[1], msgSplit[2]);
                     case "logout" -> logout();
                     case "aggiungiamico" -> aggiungi_amico(msgSplit[1]);
-                    case "lista_amici" -> lista_amici();
-                    case "sfida" -> sfida();
+                    case "listaamici" -> lista_amici();
+                    case "sfida" -> sfida(msgSplit[1]);
                     case "mostra_punteggio" -> mostra_punteggio();
                     case "mostra_classifica" -> mostra_classifica();
+
                     default -> msg;
                 };
                 System.out.println("res = " + res);
@@ -74,7 +91,8 @@ public class Session implements Runnable{
                     } else {
                         // login con successo
                         this.server.userInfo.addOnline(username, this);
-                        return "loginok_" + this.user.getId();
+
+                        return "loginok_" + this.user.getId() + "_" + this.UDP_PORT;
                     }
                 }
             } else {
@@ -126,16 +144,43 @@ public class Session implements Runnable{
             return "loginerr_0"; // non entra mai qua
         }
     }
-    // TODO: 20/06/2020 lista_amici
+
+    /**
+     * il server invia un oggetto JSON che rappresenta la lista degli amici.
+     * @return stringa in formato JSON
+     */
     private String lista_amici() {
-        /*
-        il server restituisce un oggetto JSON che rappresenta la lista degli amici.
-         */
-        return "lista_amici";
+        if (this.user != null) {
+            //noinspection ToArrayCallWithZeroLengthArrayArgument
+            String[] friends = this.user.getFriends().toArray(
+                    new String[this.user.getFriends().size()]);
+
+            Gson gson = new Gson();
+            String gsonString = gson.toJson(friends);
+            return "listaamici_" + gsonString;
+        } else {
+            return "loginerr_0";
+        }
     }
+
     // TODO: 20/06/2020 sfida
-    private String sfida() {
-        return "sfida";
+    private String sfida(String username) {
+        if (this.user == null) return "loginerr_0";
+        else {
+            if (this.user.getFriends().contains(username)) {
+                if (this.server.userInfo.checkOnline(username)) {
+                    // TODO: 23/06/2020 invio richiesta sfida
+                    Session sessionP2 = this.server.userInfo.getSession(username);
+                    return "sfidaok";
+                } else {
+                    // l'utente che si vuole sfidare è offline
+                    return "sfidaerr_2";
+                }
+            } else {
+                // l'utente che si vuole sfidare non fa parte della cerchia degli amici
+                return "sfidaerr_1";
+            }
+        }
     }
     // TODO: 20/06/2020 mostra_punteggio
     private String mostra_punteggio() {
@@ -145,4 +190,5 @@ public class Session implements Runnable{
     private String mostra_classifica() {
         return "mostra_classifica";
     }
+
 }
