@@ -30,6 +30,8 @@ public class ClientGUI extends JFrame {
 
     private BackgroundReceiverTCP receiverTCP;
     private BackgroundReceiverUDP receiverUDP;
+    private DatagramSocket socketUDP;
+    private InetAddress addressUDP;
 
     // componenti intefaccia grafica
     private JPanel mainPanel;
@@ -106,7 +108,7 @@ public class ClientGUI extends JFrame {
 
         logoutButton.addActionListener(e -> logout());
 
-        randomButton.addActionListener(e -> sendTCP("TEST!"));
+        randomButton.addActionListener(e -> sendUDP("test"));
 
         addFriendButton.addActionListener(e -> {
             String amico = this.amicoTextField.getText();
@@ -150,6 +152,36 @@ public class ClientGUI extends JFrame {
         // eventDispatcher di swing
         this.receiverTCP = new BackgroundReceiverTCP(this, this.input);
         this.receiverTCP.execute();
+    }
+
+    protected void startUDPconnection() {
+        String hostname = "localhost";
+        // if server is not on localhost change hostname...
+        try {
+            InetAddress ia = InetAddress.getByName(hostname);
+            DatagramSocket socketUDP = new DatagramSocket();
+
+            this.socketUDP = socketUDP;
+            this.addressUDP = ia;
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
+        this.receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
+        this.receiverUDP.execute();
+    }
+    private void sendUDP(String msg) {
+        try {
+            byte[] data = msg.getBytes("UTF-8");
+            DatagramPacket output
+                    = new DatagramPacket(data, data.length, this.addressUDP, this.UDP_PORT);
+            this.socketUDP.send(output);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     /**
@@ -296,6 +328,9 @@ public class ClientGUI extends JFrame {
     public void loginGUI(String username, String port) {
         this.username = username;
         this.UDP_PORT = Integer.parseInt(port);
+
+        startUDPconnection();
+        sendTCP("newgame");
 
         lista_amici();
 

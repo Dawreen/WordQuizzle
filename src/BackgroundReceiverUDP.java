@@ -25,6 +25,8 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
                 //noinspection CharsetObjectCanBeUsed
                 String s = new String(packet.getData(), 0, packet.getLength(), "UTF-8");
                 System.out.println("UDP server says: " + s);
+                gui.udpLabel.setText(s);
+                gui.udpLabel.setVisible(true);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }

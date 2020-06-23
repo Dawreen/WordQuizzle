@@ -18,8 +18,6 @@ public class Session implements Runnable{
 
     private User user;
     private int UDP_PORT;
-    private InetAddress address;
-    private DatagramSocket socketUDP;
 
     private boolean shutdown = false;
 
@@ -54,6 +52,7 @@ public class Session implements Runnable{
                     case "sfida" -> sfida(msgSplit[1]);
                     case "mostra_punteggio" -> mostra_punteggio();
                     case "mostra_classifica" -> mostra_classifica();
+                    case "newgame" -> newGame();
 
                     default -> msg;
                 };
@@ -189,6 +188,12 @@ public class Session implements Runnable{
     // TODO: 20/06/2020 mostra_classifica
     private String mostra_classifica() {
         return "mostra_classifica";
+    }
+
+    private String newGame() {
+        UDPGameServer game = new UDPGameServer(this.UDP_PORT, this.server.dictionary.getWords(5));
+        this.server.submitGame(game);
+        return "new Game";
     }
 
 }
