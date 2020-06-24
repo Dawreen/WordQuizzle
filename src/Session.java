@@ -14,7 +14,6 @@ public class Session implements Runnable{
     private DataOutputStream output;
 
     private User user;
-    private int UDP_PORT;
 
     private boolean shutdown = false;
 
@@ -25,7 +24,6 @@ public class Session implements Runnable{
         this.server = server;
         this.socket = socket;
         this.user = null;
-        this.UDP_PORT = (int)((Math.random())*((65535 - 1024) + 1)) + 1024;
     }
 
     @Override
@@ -99,7 +97,7 @@ public class Session implements Runnable{
                         // login con successo
                         this.server.userInfo.addOnline(username, this);
 
-                        return "loginok_" + this.user.getId() + "_" + this.UDP_PORT;
+                        return "loginok_" + this.user.getId();
                     }
                 }
             } else {
@@ -208,28 +206,39 @@ public class Session implements Runnable{
      * @param player1 stinga che indica l'id dello sfidante.
      */
     public void richiestaSfida(String player1) throws IOException {
-        System.out.println("richiesta di sfida da " + player1);
-        //this.msgOut = "sfidato_" + player1;
         this.output.writeUTF("sfidato_" + player1);
     }
     private String accetta(String player1) throws IOException {
         Session sessionP1 = this.server.userInfo.getSession(player1);
-        sessionP1.accettato(this.user.getId());
-        System.out.println("hai accettato la sfida di " + player1);
-        return "accetta_" + player1;
+        int port = (int)((Math.random())*((65535 - 1024) + 1)) + 1024;
+        sessionP1.accettato(this.user.getId(), port);
+        // TODO: 24/06/2020 start game player1 e player2
+        startGame(sessionP1, this, port);
+        return "accetta_" + player1 + "_" + port;
     }
-    public void accettato(String player2) throws IOException {
-        System.out.println(player2 + " ha accettato la sfida");
-        this.output.writeUTF("accettato_" + player2);
+    public void accettato(String player2, int port) throws IOException {
+        this.output.writeUTF("accettato_" + player2 + "_" + port);
     }
 
     private String rifiuta(String player1) throws IOException {
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.rifiutato(this.user.getId());
-        System.out.println("hai rifiutato la sfida di " + player1);
         return "rifiuta";
     }
     public void rifiutato(String player2) throws IOException {
         this.output.writeUTF("rifiutato_" + player2);
+    }
+
+    public void startGame(Session sessionP1, Session sessionP2, int port) {
+        UDPGameServer game = new UDPGameServer(sessionP1, sessionP2, port, this.server.dictionary.getWords(5));
+        this.server.submitGame(game);
+
+        // TODO: 24/06/2020 creare udpgameserver
+        // TODO: 24/06/2020 avviare udpgameserver
+        // TODO: 24/06/2020 comunicare ai giocatore la porta sulla quale connettersi
+    }
+
+    public String getUserID() {
+        return this.user.getId();
     }
 }

@@ -34,7 +34,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     loginERR(msgSplit[1]);
                     break;
                 case "loginok":
-                    gui.loginGUI(msgSplit[1], msgSplit[2]);
+                    gui.loginGUI(msgSplit[1]);
                     break;
                 case "amicoerr":
                     amicoERR(msgSplit[1]);
@@ -60,7 +60,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     break;
                 case "accetta": // hai accettato una sfida
                     // TODO: 24/06/2020 inizia sfida
-                    accetta(msgSplit[1]);
+                    accetta(msgSplit[1], msgSplit[2]);
                     break;
                 case "rifiuta": // hai rifiutato una sfida
                     // TODO: 24/06/2020 hai rifiutato con successo
@@ -68,7 +68,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     break;
                 case "accettato": // l'altro giocatore ha accettato
                     // TODO: 24/06/2020 inizia game con msgSplit[1]
-                    accettato(msgSplit[1]);
+                    accettato(msgSplit[1], msgSplit[2]);
                     break;
                 case "rifiutato": // l'altro giocatore ha rifiutato
                     // TODO: 24/06/2020 lo sfidato ha rifiutato
@@ -112,6 +112,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             // l'utente ha rifiutato la sfida
             gui.statusSfidaLabel.setText("Utente ha rifiutato la sfida!");
             gui.statusSfidaLabel.setVisible(true);
+            gui.rifiutaGUI();
         }
     }
     private void sfidato(String username) {
@@ -161,15 +162,15 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
         this.gui.statusSfidaLabel.setVisible(true);
         // TODO: 24/06/2020 start T1 timer
     }
-    private void accetta(String sfidante) {
+    private void accetta(String sfidante, String strPORT) {
         this.gui.statusSfidaLabel.setText("Hai accettato la sfida di " + sfidante);
         this.gui.statusSfidaLabel.setVisible(true);
-        this.gui.accettaGUI(sfidante);
+        this.gui.accettaGUI(sfidante, strPORT);
     }
-    private void accettato(String sfidato) {
+    private void accettato(String sfidato, String strPORT) {
         this.gui.statusSfidaLabel.setText(sfidato + " ha accettato la sfida!");
         this.gui.statusSfidaLabel.setVisible(true);
-        this.gui.accettaGUI(sfidato);
+        this.gui.accettaGUI(sfidato, strPORT);
     }
     private void rifiuta(String sfidante) {
         this.gui.statusSfidaLabel.setText("Hai rifiutato la sfida di " + sfidante);

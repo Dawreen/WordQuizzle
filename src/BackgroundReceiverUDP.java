@@ -14,8 +14,7 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
 
     @Override
     protected String doInBackground() {
-        System.out.println("UDP working!");
-        System.out.println("receiverUDP " + this.socket.toString());
+        System.out.println("UDP started!");
 
         byte[] buffer = new byte[65507];
         while (true) {
@@ -25,11 +24,18 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
                 //noinspection CharsetObjectCanBeUsed
                 String s = new String(packet.getData(), 0, packet.getLength(), "UTF-8");
                 System.out.println("UDP server says: " + s);
+                if (s.equals("FINE")) {
+                    return null;
+                }
                 gui.udpLabel.setText(s);
                 gui.udpLabel.setVisible(true);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void done() {
+        this.gui.toNormal();
     }
 }

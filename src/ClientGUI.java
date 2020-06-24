@@ -20,8 +20,8 @@ public class ClientGUI extends JFrame {
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
+
     //UDP connection
-    // TODO: 23/06/2020 set udp_port at login
     private int UDP_PORT;
 
     public static String HOST = "localhost";
@@ -70,6 +70,10 @@ public class ClientGUI extends JFrame {
     private JPanel infoPanel;
     private JButton rifiutaButton;
     private JButton accettaButton;
+
+    private JTextField transaltionTextField;
+    private JButton sendTradButton;
+
     private String sfidante = null;
 
     /**
@@ -120,6 +124,7 @@ public class ClientGUI extends JFrame {
         addFriendButton.addActionListener(e -> {
             String amico = this.amicoTextField.getText();
             aggiungi_amico(amico);
+            // TODO: 24/06/2020 non puoi aggiungere te stesso agli amici
         });
 
         sfidaButton.addActionListener(e -> {
@@ -127,14 +132,18 @@ public class ClientGUI extends JFrame {
                 sfida(player2);
         });
         sendUDPbotton.addActionListener(e -> sendUDP("TEST UDP"));
+
         accettaButton.addActionListener(e -> {
             sendTCP("accetta_" + this.sfidante);
-                // TODO: 24/06/2020 accetta sfida
         });
         rifiutaButton.addActionListener(e -> {
             sendTCP("rifiuta_" + this.sfidante);
             rifiutaGUI();
-                // TODO: 24/06/2020 rifiuta sfida
+        });
+        sendTradButton.addActionListener(e -> {
+            String trad = transaltionTextField.getText();
+            sendUDP(this.username + "_" + this.indexToSend + "_" + trad);
+            this.indexToSend++;
         });
     } // fine metodo costruttore ClientGUI
 
@@ -238,6 +247,7 @@ public class ClientGUI extends JFrame {
             sendTCP("logout");
             closeTCPConnection();
             logoutGUI();
+            receiverTCP.shutdown();
         }
     }
 
@@ -281,12 +291,16 @@ public class ClientGUI extends JFrame {
        inviata (a causa della scadenza del timer) si assegnano 0 punti. Il punteggio ottenuto da ciascun
        partecipante alla fine della partita viene chiamato punteggio partita.  I valori espressi come K,
        N, T1, T2, X, Y e Z sono a discrezione dello studente. */
-    private void sfida(String username) {
+    private void sfida(String player) {
         // TODO: 24/06/2020 username can't be blank or null
-        sendTCP("sfida_" + username);
-        this.statusSfidaLabel.setText("in attesa...");
-        this.statusSfidaLabel.setVisible(true);
-        sfidaGUI();
+        if (player != null) {
+            if (!player.isBlank()) {
+                sendTCP("sfida_" + player);
+                this.statusSfidaLabel.setText("in attesa...");
+                this.statusSfidaLabel.setVisible(true);
+                sfidaGUI();
+            }
+        }
     }
 
     // TODO: 20/06/2020 mostra_punteggio
@@ -343,11 +357,8 @@ public class ClientGUI extends JFrame {
      * Il metodo modifica la GUI in modo da passare ad un nuovo pannello
      * @param username stringa che contiene il username con il quale si è fatto login
      */
-    public void loginGUI(String username, String port) {
+    public void loginGUI(String username) {
         this.username = username;
-        this.UDP_PORT = Integer.parseInt(port);
-
-        startUDPconnection();
 
         lista_amici();
 
@@ -378,10 +389,6 @@ public class ClientGUI extends JFrame {
 
     private void sfidaGUI() {
         // TODO: 24/06/2020 won't logout on close (if sfidato is blank...)
-        this.friendPanel.setVisible(false);
-        this.infoPanel.setVisible(false);
-        this.sfidaButton.setVisible(false);
-        this.player2TextField.setVisible(false);
         this.player2TextField.setText("");
     }
 
@@ -412,11 +419,40 @@ public class ClientGUI extends JFrame {
         this.player2TextField.setVisible(true);
         this.player2TextField.setText("");
     }
-    public void accettaGUI(String player) {
-        this.statusSfidaLabel.setText("inizia la sfida con " + player);
+    public void toNormal() {
+
+    }
+    private int indexToSend;
+    public void accettaGUI(String player, String strPORT) {
+        this.statusSfidaLabel.setVisible(true);
+        this.accettaButton.setVisible(true);
+        this.rifiutaButton.setVisible(true);
+
+        this.friendPanel.setVisible(false);
+        this.infoPanel.setVisible(false);
+        this.sfidaButton.setVisible(false);
+        this.player2TextField.setVisible(false);
+        this.player2TextField.setText("");
+
+        this.statusSfidaLabel.setText("inizia la sfida con " + player + " sulla porta = " + strPORT);
 
         this.accettaButton.setVisible(false);
         this.rifiutaButton.setVisible(false);
+
+        this.UDP_PORT = Integer.parseInt(strPORT);
+
+        startUDPconnection();
+
+        this.indexToSend = 0;
+        sendUDP(this.username + "_" + indexToSend + "_randomWord");
+        this.indexToSend++;
         // TODO: 24/06/2020 partita
+
+        this.transaltionTextField.setVisible(true);
+        this.sendTradButton.setVisible(true);
+
+        // TODO: 24/06/2020 label words to translate
+        // TODO: 24/06/2020 textfield translation
+        // TODO: 24/06/2020 button send translation
     }
 }
