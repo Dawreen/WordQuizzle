@@ -116,8 +116,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     }
     private void sfidato(String username) {
         System.out.println("sfidato da " + username);
-        this.gui.statusSfidaLabel.setText("sfidato da " + username);
-        this.gui.statusSfidaLabel.setVisible(true);
+        this.gui.sfidatoGUI(username);
     }
 
     /**
@@ -165,10 +164,12 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     private void accetta(String sfidante) {
         this.gui.statusSfidaLabel.setText("Hai accettato la sfida di " + sfidante);
         this.gui.statusSfidaLabel.setVisible(true);
+        this.gui.accettaGUI(sfidante);
     }
     private void accettato(String sfidato) {
         this.gui.statusSfidaLabel.setText(sfidato + " ha accettato la sfida!");
         this.gui.statusSfidaLabel.setVisible(true);
+        this.gui.accettaGUI(sfidato);
     }
     private void rifiuta(String sfidante) {
         this.gui.statusSfidaLabel.setText("Hai rifiutato la sfida di " + sfidante);
@@ -177,6 +178,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     private void rifiutato(String sfidato) {
         this.gui.statusSfidaLabel.setText(sfidato + " ha rifiutato la sfida!");
         this.gui.statusSfidaLabel.setVisible(true);
+        this.gui.rifiutaGUI();
     }
 
     public void shutdown() {

@@ -1,4 +1,6 @@
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
@@ -66,6 +68,9 @@ public class ClientGUI extends JFrame {
     protected JLabel udpLabel;
     private JButton sendUDPbotton;
     private JPanel infoPanel;
+    private JButton rifiutaButton;
+    private JButton accettaButton;
+    private String sfidante = null;
 
     /**
      * Costruttore dell'intefaccia grafica.
@@ -121,8 +126,15 @@ public class ClientGUI extends JFrame {
                 String player2 = player2TextField.getText();
                 sfida(player2);
         });
-        sendUDPbotton.addActionListener(e -> {
-            sendUDP("TEST UDP");
+        sendUDPbotton.addActionListener(e -> sendUDP("TEST UDP"));
+        accettaButton.addActionListener(e -> {
+            sendTCP("accetta_" + this.sfidante);
+                // TODO: 24/06/2020 accetta sfida
+        });
+        rifiutaButton.addActionListener(e -> {
+            sendTCP("rifiuta_" + this.sfidante);
+            rifiutaGUI();
+                // TODO: 24/06/2020 rifiuta sfida
         });
     } // fine metodo costruttore ClientGUI
 
@@ -164,14 +176,11 @@ public class ClientGUI extends JFrame {
         // if server is not on localhost change hostname...
         try {
             InetAddress ia = InetAddress.getByName(hostname);
-            DatagramSocket socketUDP = new DatagramSocket();
 
-            this.socketUDP = socketUDP;
+            this.socketUDP = new DatagramSocket();
             this.addressUDP = ia;
 
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (SocketException e) {
+        } catch (UnknownHostException | SocketException e) {
             e.printStackTrace();
         }
 
@@ -180,6 +189,7 @@ public class ClientGUI extends JFrame {
     }
     private void sendUDP(String msg) {
         try {
+            //noinspection CharsetObjectCanBeUsed
             byte[] data = msg.getBytes("UTF-8");
             DatagramPacket output
                     = new DatagramPacket(data, data.length, this.addressUDP, this.UDP_PORT);
@@ -272,6 +282,7 @@ public class ClientGUI extends JFrame {
        partecipante alla fine della partita viene chiamato punteggio partita.  I valori espressi come K,
        N, T1, T2, X, Y e Z sono a discrezione dello studente. */
     private void sfida(String username) {
+        // TODO: 24/06/2020 username can't be blank or null
         sendTCP("sfida_" + username);
         this.statusSfidaLabel.setText("in attesa...");
         this.statusSfidaLabel.setVisible(true);
@@ -366,6 +377,46 @@ public class ClientGUI extends JFrame {
     }
 
     private void sfidaGUI() {
+        // TODO: 24/06/2020 won't logout on close (if sfidato is blank...)
         this.friendPanel.setVisible(false);
+        this.infoPanel.setVisible(false);
+        this.sfidaButton.setVisible(false);
+        this.player2TextField.setVisible(false);
+        this.player2TextField.setText("");
+    }
+
+    public void sfidatoGUI(String sfidante) {
+        this.sfidante = sfidante;
+        this.statusSfidaLabel.setText("vuoi giocare con " + sfidante + "?");
+        this.statusSfidaLabel.setVisible(true);
+        this.accettaButton.setVisible(true);
+        this.rifiutaButton.setVisible(true);
+
+        this.friendPanel.setVisible(false);
+        this.infoPanel.setVisible(false);
+        this.sfidaButton.setVisible(false);
+        this.player2TextField.setVisible(false);
+        this.player2TextField.setText("");
+    }
+
+    public void rifiutaGUI() {
+        this.sfidante = null;
+        this.statusSfidaLabel.setText("");
+        this.statusSfidaLabel.setVisible(false);
+        this.accettaButton.setVisible(false);
+        this.rifiutaButton.setVisible(false);
+
+        this.friendPanel.setVisible(true);
+        this.infoPanel.setVisible(true);
+        this.sfidaButton.setVisible(true);
+        this.player2TextField.setVisible(true);
+        this.player2TextField.setText("");
+    }
+    public void accettaGUI(String player) {
+        this.statusSfidaLabel.setText("inizia la sfida con " + player);
+
+        this.accettaButton.setVisible(false);
+        this.rifiutaButton.setVisible(false);
+        // TODO: 24/06/2020 partita
     }
 }

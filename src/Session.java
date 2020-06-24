@@ -216,7 +216,7 @@ public class Session implements Runnable{
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.accettato(this.user.getId());
         System.out.println("hai accettato la sfida di " + player1);
-        return "accetta";
+        return "accetta_" + player1;
     }
     public void accettato(String player2) throws IOException {
         System.out.println(player2 + " ha accettato la sfida");
