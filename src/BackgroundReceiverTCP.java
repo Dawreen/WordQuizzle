@@ -47,11 +47,32 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                 case "listaamici":
                     lista_amici(msgSplit[1]);
                     break;
+
                 case "sfidaerr":
                     sfidaERR(msgSplit[1]);
                     break;
                 case "sfidato":
                     sfidato(msgSplit[1]);
+                    break;
+                case "richiestaout":
+                    // TODO: 24/06/2020 inizio timer T1
+                    attesaRisposta();
+                    break;
+                case "accetta": // hai accettato una sfida
+                    // TODO: 24/06/2020 inizia sfida
+                    accetta(msgSplit[1]);
+                    break;
+                case "rifiuta": // hai rifiutato una sfida
+                    // TODO: 24/06/2020 hai rifiutato con successo
+                    rifiutato(msgSplit[1]);
+                    break;
+                case "accettato": // l'altro giocatore ha accettato
+                    // TODO: 24/06/2020 inizia game con msgSplit[1]
+                    accettato(msgSplit[1]);
+                    break;
+                case "rifiutato": // l'altro giocatore ha rifiutato
+                    // TODO: 24/06/2020 lo sfidato ha rifiutato
+                    rifiutato(msgSplit[1]);
                     break;
             }
         } while (!shutdown);
@@ -95,6 +116,8 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     }
     private void sfidato(String username) {
         System.out.println("sfidato da " + username);
+        this.gui.statusSfidaLabel.setText("sfidato da " + username);
+        this.gui.statusSfidaLabel.setVisible(true);
     }
 
     /**
@@ -132,6 +155,28 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
         gui.friendList = new JList();
         gui.friendList.setModel(listModel);
         gui.allFriendScrollPanel.setViewportView(gui.friendList);
+    }
+
+    private void attesaRisposta() {
+        this.gui.statusSfidaLabel.setText("in attesa di risposta...");
+        this.gui.statusSfidaLabel.setVisible(true);
+        // TODO: 24/06/2020 start T1 timer
+    }
+    private void accetta(String sfidante) {
+        this.gui.statusSfidaLabel.setText("Hai accettato la sfida di " + sfidante);
+        this.gui.statusSfidaLabel.setVisible(true);
+    }
+    private void accettato(String sfidato) {
+        this.gui.statusSfidaLabel.setText(sfidato + " ha accettato la sfida!");
+        this.gui.statusSfidaLabel.setVisible(true);
+    }
+    private void rifiuta(String sfidante) {
+        this.gui.statusSfidaLabel.setText("Hai rifiutato la sfida di " + sfidante);
+        this.gui.statusSfidaLabel.setVisible(true);
+    }
+    private void rifiutato(String sfidato) {
+        this.gui.statusSfidaLabel.setText(sfidato + " ha rifiutato la sfida!");
+        this.gui.statusSfidaLabel.setVisible(true);
     }
 
     public void shutdown() {

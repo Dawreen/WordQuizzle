@@ -3,23 +3,23 @@ import com.google.gson.Gson;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
 import java.util.Collection;
 
 public class Session implements Runnable{
     private Server server;
     private Socket socket;
 
-    DataInputStream input;
-    DataOutputStream output;
+    private DataInputStream input;
+    private DataOutputStream output;
 
     private User user;
     private int UDP_PORT;
 
     private boolean shutdown = false;
+
+    // stringa usata per accettare o rifiutare sfide
+    private String msgOut = null;
 
     public Session(Socket socket, Server server) {
         this.server = server;
@@ -50,14 +50,22 @@ public class Session implements Runnable{
                     case "aggiungiamico" -> aggiungi_amico(msgSplit[1]);
                     case "listaamici" -> lista_amici();
                     case "sfida" -> sfida(msgSplit[1]);
+
+                    case "accetta" -> accetta(msgSplit[1]);
+                    case "rifiuta" -> rifiuta(msgSplit[1]);
+
                     case "mostra_punteggio" -> mostra_punteggio();
                     case "mostra_classifica" -> mostra_classifica();
-                    case "newgame" -> newGame();
 
                     default -> msg;
                 };
                 System.out.println("res = " + res);
                 output.writeUTF(res);
+                if (this.msgOut != null) {
+                    System.out.println("sending msg " + this.msgOut);
+                    output.writeUTF(this.msgOut);
+                    this.msgOut = null;
+                }
             } while (!this.shutdown);
 
         } catch (IOException ex) {
@@ -112,6 +120,7 @@ public class Session implements Runnable{
         if (user != null) {
             this.server.userInfo.removeOnline(this.user.getId());
             this.user = null;
+            this.msgOut = null;
             this.shutdown = true;
         }
         return "logout";
@@ -163,14 +172,15 @@ public class Session implements Runnable{
     }
 
     // TODO: 20/06/2020 sfida
-    private String sfida(String username) {
+    private String sfida(String username) throws IOException {
         if (this.user == null) return "loginerr_0";
         else {
             if (this.user.getFriends().contains(username)) {
                 if (this.server.userInfo.checkOnline(username)) {
                     // TODO: 23/06/2020 invio richiesta sfida
                     Session sessionP2 = this.server.userInfo.getSession(username);
-                    return "sfidaok";
+                    sessionP2.richiestaSfida(this.user.getId());
+                    return "richiestaout";
                 } else {
                     // l'utente che si vuole sfidare è offline
                     return "sfidaerr_2";
@@ -190,10 +200,36 @@ public class Session implements Runnable{
         return "mostra_classifica";
     }
 
-    private String newGame() {
-        UDPGameServer game = new UDPGameServer(this.UDP_PORT, this.server.dictionary.getWords(5));
-        this.server.submitGame(game);
-        return "new Game";
+
+    /**
+     * i metodi seguiti servono per accettare o rifiutare delle partite.
+     * player1 è colui che sfida.
+     * player2 è lo sfidato.
+     * @param player1 stinga che indica l'id dello sfidante.
+     */
+    public void richiestaSfida(String player1) throws IOException {
+        System.out.println("richiesta di sfida da " + player1);
+        //this.msgOut = "sfidato_" + player1;
+        this.output.writeUTF("sfidato_" + player1);
+    }
+    private String accetta(String player1) throws IOException {
+        Session sessionP1 = this.server.userInfo.getSession(player1);
+        sessionP1.accettato(this.user.getId());
+        System.out.println("hai accettato la sfida di " + player1);
+        return "accetta";
+    }
+    public void accettato(String player2) throws IOException {
+        System.out.println(player2 + " ha accettato la sfida");
+        this.output.writeUTF("accettato_" + player2);
     }
 
+    private String rifiuta(String player1) throws IOException {
+        Session sessionP1 = this.server.userInfo.getSession(player1);
+        sessionP1.rifiutato(this.user.getId());
+        System.out.println("hai rifiutato la sfida di " + player1);
+        return "rifiuta";
+    }
+    public void rifiutato(String player2) throws IOException {
+        this.output.writeUTF("rifiutato_" + player2);
+    }
 }

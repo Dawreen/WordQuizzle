@@ -1,6 +1,4 @@
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
@@ -50,7 +48,7 @@ public class ClientGUI extends JFrame {
     private JPanel activityPannel;
     private JPanel buttonsPanelFirst;
     private JButton logoutButton;
-    private JButton randomButton;
+    private JButton testButton;
     private JPanel friendPanel;
     private JTextField amicoTextField;
     private JButton addFriendButton;
@@ -62,8 +60,12 @@ public class ClientGUI extends JFrame {
     private JPanel gamePanel;
     private JButton sfidaButton;
     private JTextField player2TextField;
+
     protected JLabel statusSfidaLabel;
+
     protected JLabel udpLabel;
+    private JButton sendUDPbotton;
+    private JPanel infoPanel;
 
     /**
      * Costruttore dell'intefaccia grafica.
@@ -108,7 +110,7 @@ public class ClientGUI extends JFrame {
 
         logoutButton.addActionListener(e -> logout());
 
-        randomButton.addActionListener(e -> sendUDP("test"));
+        testButton.addActionListener(e -> sendTCP("TEST TCP"));
 
         addFriendButton.addActionListener(e -> {
             String amico = this.amicoTextField.getText();
@@ -118,6 +120,9 @@ public class ClientGUI extends JFrame {
         sfidaButton.addActionListener(e -> {
                 String player2 = player2TextField.getText();
                 sfida(player2);
+        });
+        sendUDPbotton.addActionListener(e -> {
+            sendUDP("TEST UDP");
         });
     } // fine metodo costruttore ClientGUI
 
@@ -243,6 +248,7 @@ public class ClientGUI extends JFrame {
      * Il server restituisce un oggetto JSON che rappresenta la lista degli amici.
      */
     protected void lista_amici() {
+        // TODO: 24/06/2020 aggiornare quando si viene aggiunti da altri
         sendTCP("listaamici");
     }
 
@@ -269,6 +275,7 @@ public class ClientGUI extends JFrame {
         sendTCP("sfida_" + username);
         this.statusSfidaLabel.setText("in attesa...");
         this.statusSfidaLabel.setVisible(true);
+        sfidaGUI();
     }
 
     // TODO: 20/06/2020 mostra_punteggio
@@ -330,7 +337,6 @@ public class ClientGUI extends JFrame {
         this.UDP_PORT = Integer.parseInt(port);
 
         startUDPconnection();
-        sendTCP("newgame");
 
         lista_amici();
 
@@ -359,4 +365,7 @@ public class ClientGUI extends JFrame {
         this.setLocationRelativeTo(null);
     }
 
+    private void sfidaGUI() {
+        this.friendPanel.setVisible(false);
+    }
 }

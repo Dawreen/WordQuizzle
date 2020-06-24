@@ -99,8 +99,8 @@ public class Server implements RegIntWQ, Runnable {
         }
     }
 
-    public void submitGame(UDPGameServer game) {
-        this.executorUDP.submit(game); // test for UDP connection
+    public void submitGame(UDPGameServer comunicator) {
+        this.executorUDP.submit(comunicator); // test for UDP connection
     }
 
     public void shutdown() throws IOException {
