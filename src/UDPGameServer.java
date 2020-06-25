@@ -54,9 +54,6 @@ public class UDPGameServer extends UDPServer{
         this.player2 = player2;
         this.p2ID = player2.getUserID();
         this.p2Finito = false;
-
-        System.out.println("player1 = " + this.p1ID);
-        System.out.println("player2 = " + this.p2ID);
     }
 
     @Override
@@ -71,7 +68,6 @@ public class UDPGameServer extends UDPServer{
         try {
             index = Integer.parseInt(sSplit[1]); // indice della prossima parola che si vuole tradurre
         } catch (NumberFormatException ex){ // è stato inviato il tempo
-            System.out.println(s);
             if (currentPlayer.equals(p1ID)) {
                 this.timeP1 = Integer.parseInt(sSplit[2]);
                 this.p1Finito = true;
@@ -92,7 +88,7 @@ public class UDPGameServer extends UDPServer{
                 tradP2[index-1] = trad;
             }
         }
-        // TODO: 25/06/2020 ricevi tempo
+
         if (this.p1Finito && this.p2Finito) {
             punteggio(); // calcolo dei punteggi
             return;

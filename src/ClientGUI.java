@@ -428,9 +428,7 @@ public class ClientGUI extends JFrame {
      * @param strPORT porta sulla quale creare la connessione UDP
      */
     public void accettaGUI(String player, String strPORT) {
-        this.statusSfidaLabel.setVisible(true);
-        this.accettaButton.setVisible(true);
-        this.rifiutaButton.setVisible(true);
+        this.statusSfidaLabel.setVisible(false);
 
         this.friendPanel.setVisible(false);
         this.infoPanel.setVisible(false);
