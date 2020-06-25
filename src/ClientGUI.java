@@ -12,6 +12,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Arrays;
 
+/**
+ * interfaccia grafica del client. Tutte le interazzioni dell'utente avengono tramite essa.
+ * L'interfaccia si occupa di inviare i messaggi al server ed iniziallizzare le connessioni.
+ */
 public class ClientGUI extends JFrame {
     //enables connections
     private static final String SERVER_ADDRESS = "127.0.0.1";
@@ -23,57 +27,51 @@ public class ClientGUI extends JFrame {
 
     //UDP connection
     private int UDP_PORT;
-
-    public static String HOST = "localhost";
-
-    private String username;
-
-    private BackgroundReceiverTCP receiverTCP;
-    private BackgroundReceiverUDP receiverUDP;
     private DatagramSocket socketUDP;
     private InetAddress addressUDP;
 
-    // componenti intefaccia grafica
+    public static String HOST = "localhost";
+
+    private String username; // lo username con il quale si è fatto login
+
+    // worker che riceve i messaggi TCP
+    private BackgroundReceiverTCP receiverTCP;
+
     private JPanel mainPanel;
+    // componenti login
     private JPanel accessPanel;
     private JLabel usernameLabel;
     private JTextField usernameTextField;
     private JPasswordField passwordField;
     private JLabel passwordLabel;
+    private JPanel buttonsPanelFirst;
     private JButton registrationButton;
     private JButton loginButton;
+    protected JLabel resutlLabel; // comunica possibili errori per login o registrazione
 
-    // viene usata per mostrare il risulatato di registrazione e login (in caso di errore)
-    protected JLabel resutlLabel;
-
+    // componenti schermata principale
     private JLabel usernameDisplayLabel;
     private JPanel activityPannel;
-    private JPanel buttonsPanelFirst;
     private JButton logoutButton;
-    private JButton testButton;
+    // componenti interazzioni amici
     private JPanel friendPanel;
     private JTextField amicoTextField;
     private JButton addFriendButton;
     protected JLabel resultFriendLabel;
     protected JList friendList;
     protected JScrollPane allFriendScrollPanel;
-    private JButton randomButton1;
-    private JButton GameButton;
+    // componenti sfida
     private JPanel gamePanel;
     private JButton sfidaButton;
     private JTextField player2TextField;
-
     protected JLabel statusSfidaLabel;
-
     protected JLabel udpLabel;
-    private JButton sendUDPbotton;
     private JPanel infoPanel;
     private JButton rifiutaButton;
     private JButton accettaButton;
-
+    // componenti di partita
     private JTextField transaltionTextField;
     private JButton sendTradButton;
-
     private String sfidante = null;
 
     /**
@@ -98,7 +96,7 @@ public class ClientGUI extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
-                logout();
+                logout(); // esegue il logout quando si chiude la finestra
             }
         });
 
@@ -107,7 +105,10 @@ public class ClientGUI extends JFrame {
             String username = usernameTextField.getText();
             char[] password = passwordField.getPassword();
             registration(username, password);
-        });
+
+            usernameTextField.setText("");
+            passwordField.setText("");
+        }); // listener pulsante registrazione
 
         // invoca metodo con connessione TCP
         loginButton.addActionListener(e -> {
@@ -115,30 +116,31 @@ public class ClientGUI extends JFrame {
             char[] password = passwordField.getPassword();
             startTCPconnection();
             login(username, password);
-        });
+
+            usernameTextField.setText("");
+            passwordField.setText("");
+        }); // listener pulsante login
 
         logoutButton.addActionListener(e -> logout());
-
-        testButton.addActionListener(e -> sendTCP("TEST TCP"));
 
         addFriendButton.addActionListener(e -> {
             String amico = this.amicoTextField.getText();
             aggiungi_amico(amico);
-            // TODO: 24/06/2020 non puoi aggiungere te stesso agli amici
-        });
+
+            this.amicoTextField.setText("");
+        }); // aggiunta amico
 
         sfidaButton.addActionListener(e -> {
                 String player2 = player2TextField.getText();
                 sfida(player2);
-        });
-        sendUDPbotton.addActionListener(e -> sendUDP("TEST UDP"));
+        }); // richiesta di sfida
 
         accettaButton.addActionListener(e -> {
             sendTCP("accetta_" + this.sfidante);
         });
         rifiutaButton.addActionListener(e -> {
             sendTCP("rifiuta_" + this.sfidante);
-            rifiutaGUI();
+            toNormal();
         });
         sendTradButton.addActionListener(e -> {
             String trad = transaltionTextField.getText();
@@ -157,7 +159,6 @@ public class ClientGUI extends JFrame {
         } catch (IOException | NullPointerException e) {
             this.resutlLabel.setText("Errore di connessione!");
             this.resutlLabel.setVisible(true);
-            // e.printStackTrace();
         }
     }
 
@@ -180,6 +181,9 @@ public class ClientGUI extends JFrame {
         this.receiverTCP.execute();
     }
 
+    /**
+     * inizializza la connessione UDP che viene utilizata durante la partita.
+     */
     protected void startUDPconnection() {
         String hostname = "localhost";
         // if server is not on localhost change hostname...
@@ -193,8 +197,9 @@ public class ClientGUI extends JFrame {
             e.printStackTrace();
         }
 
-        this.receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
-        this.receiverUDP.execute();
+        //
+        BackgroundReceiverUDP receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
+        receiverUDP.execute();
     }
     private void sendUDP(String msg) {
         try {
@@ -236,6 +241,7 @@ public class ClientGUI extends JFrame {
         } else {
             sendTCP("login_" + username + "_" + Arrays.toString(password));
         }
+        timerDeleteLabel(this.resutlLabel, 5);
     }
 
     /**
@@ -259,7 +265,13 @@ public class ClientGUI extends JFrame {
     private void aggiungi_amico(String amico) {
         if (amico != null) {
             if (!amico.isBlank())
-                sendTCP("aggiungiamico_" + amico);
+                if (!amico.equals(this.username)) {
+                    sendTCP("aggiungiamico_" + amico);
+                } else {
+                    this.resultFriendLabel.setText("Non puoi aggiungere te stesso!");
+                    this.resultFriendLabel.setVisible(true);
+                    timerDeleteLabel(this.resultFriendLabel, 5);
+                }
         }
     }
 
@@ -268,37 +280,20 @@ public class ClientGUI extends JFrame {
      * Il server restituisce un oggetto JSON che rappresenta la lista degli amici.
      */
     protected void lista_amici() {
-        // TODO: 24/06/2020 aggiornare quando si viene aggiunti da altri
         sendTCP("listaamici");
     }
 
-    // TODO: 20/06/2020 sfida
-    /* sfida(nickUtente, nickAmico): l’utente nickUtente intende sfidare l’utente di nome nickAmico. Il
-       server controlla che nickAmico appartenga alla lista di amicizie di nickUtente, in caso negativo
-       restituisce un codice di errore e l’operazione termina. In caso positivo, il server invia a
-       nickAmico ​ una richiesta di accettazione della sfida e, solo dopo che la richiesta è stata
-       accettata, la sfida può avere inizio (se la risposta non è stata ricevuta entro un intervallo di
-       tempo T1 si considera la sfida come non accettata). La sfida riguarda la traduzione di una lista
-       di parole italiane in parole inglesi, nel minimo tempo possibile. Il server sceglie, in modo casuale,
-       K parole da un dizionario contenente N parole italiane da inviare successivamente, una alla volta,
-       ai due sfidanti. La partita può durare al massimo un intervallo di tempo T2. Il server invia ai
-       partecipanti la prima parola. Quando il giocatore invia la traduzione (giusta o sbagliata), il server
-       invia la parola successiva a quel giocatore. Il gioco termina quando entrambi i giocatori hanno
-       inviato le traduzioni alle K parole o quando scade il timer.  La correttezza della traduzione viene
-       controllata dal server utilizzando un servizio esterno, come specificato nella sezione seguente.
-       Ogni traduzione corretta assegna X punti al giocatore; ogni traduzione sbagliata assegna Y punti
-       negativi; il giocatore con più punti vince la sfida ed ottiene Z punti extra. Per ogni risposta non
-       inviata (a causa della scadenza del timer) si assegnano 0 punti. Il punteggio ottenuto da ciascun
-       partecipante alla fine della partita viene chiamato punteggio partita.  I valori espressi come K,
-       N, T1, T2, X, Y e Z sono a discrezione dello studente. */
+    /**
+     * Invia richiesta di sfida ad un altro utente.
+     * @param player stringa del giocatore che si vuole sfidare
+     */
     private void sfida(String player) {
-        // TODO: 24/06/2020 username can't be blank or null
         if (player != null) {
             if (!player.isBlank()) {
                 sendTCP("sfida_" + player);
                 this.statusSfidaLabel.setText("in attesa...");
                 this.statusSfidaLabel.setVisible(true);
-                sfidaGUI();
+                this.player2TextField.setText("");
             }
         }
     }
@@ -330,6 +325,7 @@ public class ClientGUI extends JFrame {
         this.resutlLabel.setVisible(true);
         if (name.isBlank() || password.length == 0) {
             this.resutlLabel.setText("i campi username e password non possono essere vuoti!");
+            timerDeleteLabel(this.resutlLabel, 5);
             return;
         }
         try {
@@ -343,14 +339,14 @@ public class ClientGUI extends JFrame {
                 this.resutlLabel.setText("Registrazione avvenuta con successo!");
             } else if (response == 2){
                 this.resutlLabel.setText("Username già in uso!");
-            } else { // response == 2
+            } else {
                 this.resutlLabel.setText("Errore!");
             }
         } catch (Exception e) {
             e.printStackTrace();
             this.resutlLabel.setText("Errore da server!");
         }
-        // TODO: 20/06/2020 timer on resultLabel
+        timerDeleteLabel(this.resutlLabel, 5);
     } // fine registration
 
     /**
@@ -387,11 +383,10 @@ public class ClientGUI extends JFrame {
         this.setLocationRelativeTo(null);
     }
 
-    private void sfidaGUI() {
-        // TODO: 24/06/2020 won't logout on close (if sfidato is blank...)
-        this.player2TextField.setText("");
-    }
-
+    /**
+     * Pannello che comunica richiesta di sfida da un altro giocatore
+     * @param sfidante id del giocatore che ti ha sfidato
+     */
     public void sfidatoGUI(String sfidante) {
         this.sfidante = sfidante;
         this.statusSfidaLabel.setText("vuoi giocare con " + sfidante + "?");
@@ -406,10 +401,11 @@ public class ClientGUI extends JFrame {
         this.player2TextField.setText("");
     }
 
-    public void rifiutaGUI() {
-        this.sfidante = null;
-        this.statusSfidaLabel.setText("");
-        this.statusSfidaLabel.setVisible(false);
+
+    /**
+     * Riporta la GUI alla scremata principale.
+     */
+    public void toNormal() {
         this.accettaButton.setVisible(false);
         this.rifiutaButton.setVisible(false);
 
@@ -418,11 +414,20 @@ public class ClientGUI extends JFrame {
         this.sfidaButton.setVisible(true);
         this.player2TextField.setVisible(true);
         this.player2TextField.setText("");
-    }
-    public void toNormal() {
 
+        this.transaltionTextField.setVisible(false);
+        this.sendTradButton.setVisible(false);
+        this.udpLabel.setVisible(false);
     }
+
     private int indexToSend;
+
+    /**
+     * Setta la GUI per l'inizio di una partita, creando la connessione UDP ed
+     * inviando la richiesta della prima parola
+     * @param player
+     * @param strPORT
+     */
     public void accettaGUI(String player, String strPORT) {
         this.statusSfidaLabel.setVisible(true);
         this.accettaButton.setVisible(true);
@@ -434,7 +439,7 @@ public class ClientGUI extends JFrame {
         this.player2TextField.setVisible(false);
         this.player2TextField.setText("");
 
-        this.statusSfidaLabel.setText("inizia la sfida con " + player + " sulla porta = " + strPORT);
+        //this.statusSfidaLabel.setText("inizia la sfida con " + player + " sulla porta = " + strPORT);
 
         this.accettaButton.setVisible(false);
         this.rifiutaButton.setVisible(false);
@@ -445,14 +450,34 @@ public class ClientGUI extends JFrame {
 
         this.indexToSend = 0;
         sendUDP(this.username + "_" + indexToSend + "_randomWord");
-        this.indexToSend++;
-        // TODO: 24/06/2020 partita
+        // randomWord evita una OutOfBoundException nel server UDP
+        this.indexToSend++; // verrà richiesta la parola successiva
 
         this.transaltionTextField.setVisible(true);
         this.sendTradButton.setVisible(true);
+    }
 
-        // TODO: 24/06/2020 label words to translate
-        // TODO: 24/06/2020 textfield translation
-        // TODO: 24/06/2020 button send translation
+    public void sendTime(long time) {
+        sendUDP(this.username + "_-1_" + time);
+    }
+
+    /**
+     * Cancella una label dopo un tempo predeterminato.
+     * (la maggior parte delle label vengo riutillizzate da diversi metodi, ciò crea diversi timer di
+     * cancellazione: quando si svolgono diverse azioni rapidamente tali timer si potrebbero sovrapporre
+     * cancellando non intenzionalmente alcune label, a tal proposito si consiglia di fare le cose con
+     * calma)
+     * @param label label da cancellare
+     * @param timeSec tempo prima di cancellare in secondi
+     */
+    public void timerDeleteLabel(JLabel label, int timeSec) {
+        Timer timer = new Timer(timeSec * 1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                label.setText("");
+                label.setVisible(false);
+            }
+        });
+        timer.start();
     }
 }

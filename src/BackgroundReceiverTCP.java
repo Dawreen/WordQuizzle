@@ -1,8 +1,9 @@
 import com.google.gson.Gson;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -13,7 +14,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
     private final ClientGUI gui;
     private Socket socket;
     private DataInputStream input;
-    private DataOutputStream output;
+
     private boolean shutdown = false;
 
     public BackgroundReceiverTCP(ClientGUI gui, DataInputStream input) {
@@ -29,26 +30,34 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             String msg = this.input.readUTF();
             System.out.println("TCP server says: " + msg);
             String[] msgSplit = msg.split("_");
+            // switch dei possibili messaggi
             switch (msgSplit[0]) {
-                case "loginerr":
+                case "loginerr": // errore durante login
                     loginERR(msgSplit[1]);
                     break;
                 case "loginok":
                     gui.loginGUI(msgSplit[1]);
                     break;
-                case "amicoerr":
+                case "amicoerr": // errore nell'aggiungere un amico
                     amicoERR(msgSplit[1]);
                     break;
                 case "amicook":
                     gui.resultFriendLabel.setText("Amico aggiunto con successo!");
                     gui.resultFriendLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.resultFriendLabel, 5);
+                    gui.lista_amici();
+                    break;
+                case "aggiunto": // sei stato aggiunto agli amici da un altro utente
+                    gui.resultFriendLabel.setText("Sei diventato amico di " + msgSplit[1]);
+                    gui.resultFriendLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.resultFriendLabel, 5);
                     gui.lista_amici();
                     break;
                 case "listaamici":
                     lista_amici(msgSplit[1]);
                     break;
 
-                case "sfidaerr":
+                case "sfidaerr": // errore durante sfida
                     sfidaERR(msgSplit[1]);
                     break;
                 case "sfidato":
@@ -59,20 +68,35 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     attesaRisposta();
                     break;
                 case "accetta": // hai accettato una sfida
-                    // TODO: 24/06/2020 inizia sfida
                     accetta(msgSplit[1], msgSplit[2]);
                     break;
                 case "rifiuta": // hai rifiutato una sfida
-                    // TODO: 24/06/2020 hai rifiutato con successo
-                    rifiutato(msgSplit[1]);
+                    gui.statusSfidaLabel.setText("Hai rifiutato la sfida!");
+                    gui.statusSfidaLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
                     break;
                 case "accettato": // l'altro giocatore ha accettato
-                    // TODO: 24/06/2020 inizia game con msgSplit[1]
                     accettato(msgSplit[1], msgSplit[2]);
                     break;
                 case "rifiutato": // l'altro giocatore ha rifiutato
-                    // TODO: 24/06/2020 lo sfidato ha rifiutato
                     rifiutato(msgSplit[1]);
+                    break;
+                case "vincitore": // hai vinto l'utima parita
+                    // TODO: 25/06/2020 aggiorna punteggio
+                    gui.statusSfidaLabel.setText("Hai vinto!");
+                    gui.statusSfidaLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
+                    break;
+                case "perdente": // hai perso l'ultima partita
+                    // TODO: 25/06/2020 aggiorna punteggio
+                    gui.statusSfidaLabel.setText("Hai perso.");
+                    gui.statusSfidaLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
+                    break;
+                case "pareggio": // l'ultima partita è finita in pareggio
+                    gui.statusSfidaLabel.setText("Finita in pareggio.");
+                    gui.statusSfidaLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
                     break;
             }
         } while (!shutdown);
@@ -94,8 +118,13 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             gui.resultFriendLabel.setText("Già presente tra gli amici.");
         }
         gui.resultFriendLabel.setVisible(true);
+        gui.timerDeleteLabel(gui.resultFriendLabel, 5);
     }
 
+    /**
+     * comunica le ragioni per cui una sfida non è stata possibile
+     * @param err tipo errore
+     */
     private void sfidaERR(String err) {
         System.out.println("in error sfida");
         if (err.equals("1")) {
@@ -112,9 +141,15 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             // l'utente ha rifiutato la sfida
             gui.statusSfidaLabel.setText("Utente ha rifiutato la sfida!");
             gui.statusSfidaLabel.setVisible(true);
-            gui.rifiutaGUI();
+            //gui.rifiutaGUI();
         }
+        gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
     }
+
+    /**
+     * Comunica l'arrivo di una sfida da un altro giocatore
+     * @param username stringa che indica l'id di che ti ha sfidato
+     */
     private void sfidato(String username) {
         System.out.println("sfidato da " + username);
         this.gui.sfidatoGUI(username);
@@ -162,26 +197,43 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
         this.gui.statusSfidaLabel.setVisible(true);
         // TODO: 24/06/2020 start T1 timer
     }
+
+    /**
+     * Conferma di accettazione della sfida
+     * @param sfidante id di colui con il quale farai la sfida
+     * @param strPORT stringa della porta alla quale connettersi per iniziare la sfida
+     */
     private void accetta(String sfidante, String strPORT) {
         this.gui.statusSfidaLabel.setText("Hai accettato la sfida di " + sfidante);
         this.gui.statusSfidaLabel.setVisible(true);
         this.gui.accettaGUI(sfidante, strPORT);
     }
+
+    /**
+     * Colui che hai sfidato ha accettato la tua sfida
+     * @param sfidato id del giocatore che ha accettato la tua sfida
+     * @param strPORT porta alla quale connettersi per iniziare la sfida
+     */
     private void accettato(String sfidato, String strPORT) {
         this.gui.statusSfidaLabel.setText(sfidato + " ha accettato la sfida!");
         this.gui.statusSfidaLabel.setVisible(true);
         this.gui.accettaGUI(sfidato, strPORT);
     }
-    private void rifiuta(String sfidante) {
-        this.gui.statusSfidaLabel.setText("Hai rifiutato la sfida di " + sfidante);
-        this.gui.statusSfidaLabel.setVisible(true);
-    }
+
+    /**
+     * il giocatore che hai sfidato ha rifiutato la sfida
+     * @param sfidato id di chi avevi sfidato
+     */
     private void rifiutato(String sfidato) {
         this.gui.statusSfidaLabel.setText(sfidato + " ha rifiutato la sfida!");
         this.gui.statusSfidaLabel.setVisible(true);
-        this.gui.rifiutaGUI();
+        gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
+        this.gui.toNormal();
     }
 
+    /**
+     * metodo per eseguire lo shutdown del worker
+     */
     public void shutdown() {
         this.shutdown = true;
     }

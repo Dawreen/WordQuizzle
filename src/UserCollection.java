@@ -1,11 +1,13 @@
 import com.google.gson.Gson;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 
+/**
+ * Classe che gestisce gli utenti, password e session degli utenti che sono online.
+ */
 public class UserCollection {
     private HashMap<String, User> allUsers;
     private File userFile;
@@ -66,7 +68,7 @@ public class UserCollection {
     }
 
     /**
-     * Utilizzando i file diconfigurazione inizializza le strutture dati del programma.
+     * Utilizzando i file di configurazione inizializza le strutture dati del programma.
      */
     private synchronized void updateData() {
         String userString = "";
@@ -113,6 +115,9 @@ public class UserCollection {
         }
     }
 
+    /**
+     * Aggiorna il file con le registrazioni(username, password).
+     */
     private synchronized void registrationUpdate (){
         Set<String> setUserName = this.passwords.keySet();
         String[] auxString = new String[setUserName.size()*2];
@@ -133,6 +138,13 @@ public class UserCollection {
         }
     }
 
+    /**
+     * Crea e aggiunge un nuovo utente.
+     * @param username stringa dell'id del nuovo utente.
+     * @param password password per l'accesso.
+     * @return true in caso di aggiunta avvenuta con successo.
+     *         false nel caso non sia stato possibile aggiungere l'utente.
+     */
     public synchronized boolean addUser(String username, String password) {
         if (this.allUsers.containsKey(username)) return false;
         else {
@@ -144,12 +156,33 @@ public class UserCollection {
         }
     }
 
+    /**
+     * Controllo se l'utente è registrato.
+     * @param username id dell'utente del quale si vuole sapere l'avvenuta registrazione
+     * @return true se l'utente è registrato
+     *         false altrimenti
+     */
     public synchronized boolean checkRegistration(String username) {
         return this.allUsers.containsKey(username);
     }
+
+    /**
+     * Controlla se un utente è online.
+     * @param username id dell'utente
+     * @return true se l'utente è online
+     *         false altrimenti
+     */
     public synchronized boolean checkOnline(String username) {
         return this.online.containsKey(username);
     }
+
+    /**
+     * Controlla che l'utente abbia inserito la password corretta.
+     * @param username id dell'utente.
+     * @param password stringa con i caratteri da controllare.
+     * @return true se la password combacia con quella nel "database".
+     *         false altrimenti.
+     */
     public synchronized User checkPass(String username, String password) {
         if (this.passwords.get(username).equals(password)) {
             return allUsers.get(username);
@@ -158,16 +191,37 @@ public class UserCollection {
         }
     }
 
+    /**
+     * Aggiunge un utente a quelli online.
+     * @param username id dell'utente da aggiungere online.
+     * @param session sessione al quale l'utente è connesso.
+     */
     public synchronized void addOnline(String username, Session session) {
         this.online.put(username, session);
     }
+
+    /**
+     * Rimuove un utente dal insieme degli utenti online.
+     * @param username id dell'utente da rimuovere.
+     */
     public synchronized void removeOnline(String username) {
         this.online.remove(username);
     }
+
+    /**
+     * Restituisce l'istanza di un dato utente online.
+     * @param username id dell'utente interessato.
+     * @return istanza della sessione.
+     */
     public synchronized Session getSession(String username) {
         return this.online.get(username);
     }
 
+    /**
+     * Aggiunge due utenti alla rispettiva cerchia delle amicizie
+     * @param user1 id del utente che aggiunge
+     * @param user2 id dell'utente che viene aggiunto
+     */
     public synchronized void aggiungiAmicizia(String user1, String user2) {
         this.allUsers.get(user1).addFriend(user2);
         this.allUsers.get(user2).addFriend(user1);

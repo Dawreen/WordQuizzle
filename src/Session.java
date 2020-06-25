@@ -4,22 +4,26 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
-import java.util.Collection;
 
+/**
+ * Classe che corrisponde ad un Client e permette la comunicazione con il server.
+ */
 public class Session implements Runnable{
-    private Server server;
-    private Socket socket;
+    private final Server server; // istanza del server
+    private final Socket socket; // connessione TCP
 
-    private DataInputStream input;
-    private DataOutputStream output;
+    private DataOutputStream output; // invio comunicazioni al client
 
-    private User user;
+    private User user; // istanza dell'utente
 
     private boolean shutdown = false;
 
-    // stringa usata per accettare o rifiutare sfide
-    private String msgOut = null;
-
+    /**
+     * Costruttore  della classe.
+     * Inizialmente senza un utente (aggiunto al login)
+     * @param socket che permette la comunicazione con il client
+     * @param server istanza del server per accedere ai dati
+     */
     public Session(Socket socket, Server server) {
         this.server = server;
         this.socket = socket;
@@ -32,15 +36,13 @@ public class Session implements Runnable{
         try (DataInputStream input = new DataInputStream(this.socket.getInputStream());
              DataOutputStream output = new DataOutputStream(this.socket.getOutputStream())) {
 
-            this.input = input;
             this.output = output;
 
             String msg;
             String res;
 
-            do {
+            do { // ciclo while nel quale si ricevono comunicazioni dal server
                 msg = input.readUTF();
-                System.out.println("client says: " + msg);
                 String[] msgSplit = msg.split("_");
                 res = switch (msgSplit[0]) {
                     case "login" -> login(msgSplit[1], msgSplit[2]);
@@ -57,20 +59,13 @@ public class Session implements Runnable{
 
                     default -> msg;
                 };
-                System.out.println("res = " + res);
-                output.writeUTF(res);
-                if (this.msgOut != null) {
-                    System.out.println("sending msg " + this.msgOut);
-                    output.writeUTF(this.msgOut);
-                    this.msgOut = null;
-                }
+                output.writeUTF(res); // risposta da inviare al client
             } while (!this.shutdown);
 
         } catch (IOException ex) {
             //ex.printStackTrace();
-            logout();
+            logout(); // in caso di disconnessione si fa il logout
             if (user != null) System.out.println(user.getId() + " si è disconnesso!");
-            // TODO: 22/06/2020 close gracefuly
         }
 
     } // fine metodo run
@@ -109,24 +104,24 @@ public class Session implements Runnable{
 
     /**
      * Metodo che indica al server che un utente non è più online.
-     * Nel caso l'utente non avesse mai fatto il login, il metodo non fa alcuna modifica.
+     * Dato che la connessione viene chiusa la session viene terminata.
+     *
      * @return restituisce una stringa per coerenza con gli altri metodi,
      *         ma sul client la connessione viene chiusa al logout quindi il messaggio
      *         non arriva dal server.
      */
     private String logout() {
         if (user != null) {
-            this.server.userInfo.removeOnline(this.user.getId());
+            this.server.userInfo.removeOnline(this.user.getId()); // rimozione dell'utente dagli user online
             this.user = null;
-            this.msgOut = null;
-            this.shutdown = true;
+            this.shutdown = true; // terminazione di session
         }
         return "logout";
     }
 
     /**
      * crea un arco non orientato tra 2 utenti (il loro username vengono salvati nelle
-     * rispettive liste degli amici in caso di successo.
+     * rispettive liste degli amici in caso di successo).
      * @param amico l'id utente di chi si vuole aggiungere agli amici
      * @return stringa che comunica l'esito dell'operazione
      */
@@ -141,6 +136,11 @@ public class Session implements Runnable{
                 if (this.server.userInfo.checkRegistration(amico)) {
                     // l'utente che si vuole aggiungere esiste
                     this.server.userInfo.aggiungiAmicizia(this.user.getId(), amico);
+
+                    if (this.server.userInfo.checkOnline(amico)) {
+                        Session sessionAmico = this.server.userInfo.getSession(amico);
+                        sessionAmico.aggiuntoDa(this.user.getId());
+                    }
                     return "amicook";
                 } else {
                     return "amicoerr_0";
@@ -152,16 +152,27 @@ public class Session implements Runnable{
     }
 
     /**
+     * Metodo che notifica al client l'essere stato aggiunto da un altro utente
+     * @param amico utente dal quale si è stati aggiunti
+     */
+    public void aggiuntoDa(String amico) {
+        try {
+            this.output.writeUTF("aggiunto_" + amico);
+        } catch (IOException e) {
+        }
+    }
+
+    /**
      * il server invia un oggetto JSON che rappresenta la lista degli amici.
      * @return stringa in formato JSON
      */
-    private String lista_amici() {
+    public String lista_amici() {
         if (this.user != null) {
             //noinspection ToArrayCallWithZeroLengthArrayArgument
             String[] friends = this.user.getFriends().toArray(
                     new String[this.user.getFriends().size()]);
 
-            Gson gson = new Gson();
+            Gson gson = new Gson(); // codifica in formato JSON
             String gsonString = gson.toJson(friends);
             return "listaamici_" + gsonString;
         } else {
@@ -169,15 +180,21 @@ public class Session implements Runnable{
         }
     }
 
-    // TODO: 20/06/2020 sfida
-    private String sfida(String username) throws IOException {
+    /**
+     * Invio di sfida ad un altro utente.
+     * @param player2 giocatore che si vuole sfidare
+     * @return una stringa che comunica se è stato o meno possibile sfidare
+     *         l'altro utente.
+     * @throws IOException lanciata dal metodo richiestaSfida
+     */
+    private String sfida(String player2) throws IOException {
         if (this.user == null) return "loginerr_0";
         else {
-            if (this.user.getFriends().contains(username)) {
-                if (this.server.userInfo.checkOnline(username)) {
-                    // TODO: 23/06/2020 invio richiesta sfida
-                    Session sessionP2 = this.server.userInfo.getSession(username);
+            if (this.user.getFriends().contains(player2)) {
+                if (this.server.userInfo.checkOnline(player2)) {
+                    Session sessionP2 = this.server.userInfo.getSession(player2);
                     sessionP2.richiestaSfida(this.user.getId());
+
                     return "richiestaout";
                 } else {
                     // l'utente che si vuole sfidare è offline
@@ -200,44 +217,103 @@ public class Session implements Runnable{
 
 
     /**
-     * i metodi seguiti servono per accettare o rifiutare delle partite.
-     * player1 è colui che sfida.
-     * player2 è lo sfidato.
+     * Invio al client la richiesta di sfida da parte di un utente.
      * @param player1 stinga che indica l'id dello sfidante.
+     * @throws IOException newl caso ci sia stato un errore nell'invio.
      */
     public void richiestaSfida(String player1) throws IOException {
         this.output.writeUTF("sfidato_" + player1);
     }
+
+    /**
+     * Comunica l'accetazione di una sfida da parte del client
+     * @param player1 giocatore sfidante al quale comunicare l'avvenuta accettazione
+     * @return stringa contente l'id dello sfidante e la porta sulla quale settare
+     *         la connessione UDP della partita
+     * @throws IOException lanciata dal metodo accettato()
+     */
     private String accetta(String player1) throws IOException {
         Session sessionP1 = this.server.userInfo.getSession(player1);
         int port = (int)((Math.random())*((65535 - 1024) + 1)) + 1024;
         sessionP1.accettato(this.user.getId(), port);
-        // TODO: 24/06/2020 start game player1 e player2
         startGame(sessionP1, this, port);
         return "accetta_" + player1 + "_" + port;
     }
+
+    /**
+     * Il giocatore al quale si è inviata la richiesta di sfida (player2) ha accettato la sfida
+     * @param player2 id dello sfidato
+     * @param port porta sulla quale si dovrà settare la connessione UDP
+     * @throws IOException in caso di errore di connessione del metodo write()
+     */
     public void accettato(String player2, int port) throws IOException {
         this.output.writeUTF("accettato_" + player2 + "_" + port);
     }
 
+    /**
+     * Comunica il rifiuto di una sfida da parte del client.
+     * @param player1 giocatore sfidante al quale comunicare l'avvenuto rifiuto
+     * @return stringa di conferma dell'avvenuto rifiuto
+     * @throws IOException lanciata dal metodo rifiutato()
+     */
     private String rifiuta(String player1) throws IOException {
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.rifiutato(this.user.getId());
         return "rifiuta";
     }
+
+    /**
+     * Il giocatore al quale si è inviata la richiesta di sfida (player2) ha rifiutato la sfida.
+     * @param player2 id dello sfidato
+     * @throws IOException in caso di errore di connessione del metodo write()
+     */
     public void rifiutato(String player2) throws IOException {
         this.output.writeUTF("rifiutato_" + player2);
     }
 
+    /**
+     * Avvio del lato server della partita
+     * @param sessionP1 istanza della session del giocatore 1
+     * @param sessionP2 istanza della session del giocatore 2
+     * @param port porta sulla quale verrà settata la connessione UDP
+     */
     public void startGame(Session sessionP1, Session sessionP2, int port) {
         UDPGameServer game = new UDPGameServer(sessionP1, sessionP2, port, this.server.dictionary.getWords(5));
         this.server.submitGame(game);
-
-        // TODO: 24/06/2020 creare udpgameserver
-        // TODO: 24/06/2020 avviare udpgameserver
-        // TODO: 24/06/2020 comunicare ai giocatore la porta sulla quale connettersi
     }
 
+    /**
+     * Comunica al client di aver vinto la sfida.
+     * Il metodo inoltre aggiorna il punteggio su file
+     * @throws IOException in caso di errore di connessione del metodo write()
+     */
+    public void vincitore() throws IOException {
+        this.output.writeUTF("vincitore");
+        this.user.addPoints();
+        this.server.userInfo.updateFile();
+        // TODO: 25/06/2020 aggioranre punteggio tutti quelli online?
+    }
+
+    /**
+     * Comunica al client di aver perso la sfida.
+     * @throws IOException in caso di errore di connessione del metodo write()
+     */
+    public void perdente() throws IOException {
+        this.output.writeUTF("perdente");
+    }
+
+    /**
+     * Comunica al client che la partita è finita in pareggio.
+     * @throws IOException in caso di errore di connessione del metodo write()
+     */
+    public void pareggio() throws IOException {
+        this.output.writeUTF("pareggio");
+    }
+
+    /**
+     * Getter dell'id utente.
+     * @return L'id dell'utente con il quale si è fatto login nella session.
+     */
     public String getUserID() {
         return this.user.getId();
     }

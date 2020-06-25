@@ -5,10 +5,14 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.logging.*;
 
+/**
+ * Classe molto flessibile. In grado di ricevere signoli o multipli datagram e
+ * rispondere a ciascuno.
+ * Il metodo respond() può essere settato a piacimento a seconda delle necessità.
+ */
 public abstract class UDPServer implements Runnable {
     private final int bufferSize; //in bytes
     private final int port;
-    private final Logger logger = Logger.getLogger(UDPServer.class.getCanonicalName());
     private volatile boolean isShutDown = false;
 
     protected UDPServer(int port, int bufferSize) {
@@ -34,16 +38,25 @@ public abstract class UDPServer implements Runnable {
                 } catch (SocketTimeoutException ex) {
                     if (isShutDown) return;
                 } catch (IOException ex) {
-                    logger.log(Level.WARNING, ex.getMessage(), ex);
+                    System.err.println("IOexception in UDPServer 41");
                 }
             }// end while
         } catch (SocketException ex) {
-            logger.log(Level.SEVERE, "Could not bind to port: " + port, ex);
+            System.out.println("Non è stato possibile fare il bind sulla porta " + port);
         }
     }
 
+    /**
+     * metodo da implementare per inviare le risposte.
+     * @param socket sulla quale avviene la communicazione UDP
+     * @param packet pacchetto che si è ricevuto
+     * @throws IOException
+     */
     public abstract void respond(DatagramSocket socket, DatagramPacket packet) throws IOException;
 
+    /**
+     * Chiude il server.
+     */
     public void shutDown() {
         this.isShutDown = true;
     }

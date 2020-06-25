@@ -12,20 +12,15 @@
     </properties>
     <border type="none"/>
     <children>
-      <vspacer id="49ccf">
-        <constraints>
-          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
-        </constraints>
-      </vspacer>
       <vspacer id="50cb1">
         <constraints>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
         </constraints>
       </vspacer>
-      <grid id="ef783" binding="activityPannel" layout-manager="GridLayoutManager" row-count="3" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="ef783" binding="activityPannel" layout-manager="GridLayoutManager" row-count="4" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
-          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
             <preferred-size width="480" height="480"/>
           </grid>
         </constraints>
@@ -173,7 +168,7 @@
               </component>
             </children>
           </grid>
-          <grid id="aff57" binding="infoPanel" layout-manager="GridLayoutManager" row-count="3" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+          <grid id="aff57" binding="infoPanel" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -181,35 +176,22 @@
             <properties/>
             <border type="none"/>
             <children>
-              <component id="6340c" class="javax.swing.JButton" binding="sendUDPbotton">
-                <constraints>
-                  <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                </constraints>
-                <properties>
-                  <text value="SEND UDP"/>
-                </properties>
-              </component>
-              <component id="54967" class="javax.swing.JButton" binding="testButton">
-                <constraints>
-                  <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                </constraints>
-                <properties>
-                  <text value="TEST"/>
-                </properties>
-              </component>
               <component id="bc0aa" class="javax.swing.JButton" binding="logoutButton">
                 <constraints>
                   <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="5" fill="0" indent="0" use-parent-layout="false">
-                    <preferred-size width="80" height="21"/>
+                    <preferred-size width="80" height="32"/>
                   </grid>
                 </constraints>
                 <properties>
                   <text value="LOGOUT"/>
+                  <visible value="true"/>
                 </properties>
               </component>
               <component id="aff61" class="javax.swing.JLabel" binding="usernameDisplayLabel">
                 <constraints>
-                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+                    <preferred-size width="0" height="32"/>
+                  </grid>
                 </constraints>
                 <properties>
                   <text value=""/>
@@ -218,6 +200,16 @@
               </component>
             </children>
           </grid>
+          <vspacer id="d2359">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="4" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </vspacer>
+          <vspacer id="821e1">
+            <constraints>
+              <grid row="3" column="0" row-span="1" col-span="4" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </vspacer>
         </children>
       </grid>
       <grid id="d5f29" binding="accessPanel" layout-manager="GridLayoutManager" row-count="4" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -299,6 +291,11 @@
           <visible value="false"/>
         </properties>
       </component>
+      <vspacer id="fe75e">
+        <constraints>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+        </constraints>
+      </vspacer>
     </children>
   </grid>
 </form>
