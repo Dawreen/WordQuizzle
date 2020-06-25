@@ -21,7 +21,7 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
     protected String doInBackground() {
         System.out.println("UDP started!");
         Timestamp startTime = null;
-        Timestamp finishTime = null;
+        Timestamp finishTime;
 
         byte[] buffer = new byte[65507];
         while (true) {
@@ -37,7 +37,7 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
                 if (s.equals("FINE")) { // ultimo messaggio che indica che le parole da tradurre sono finite
                     finishTime = new Timestamp(System.currentTimeMillis());
                     long time = finishTime.getTime() - startTime.getTime();
-                    //gui.sendTime(time);
+                    gui.sendTime(time);
                     return null;
                 }
                 // udpLabel è dove vengono mostrate le parole sulla GUI

@@ -135,9 +135,8 @@ public class ClientGUI extends JFrame {
                 sfida(player2);
         }); // richiesta di sfida
 
-        accettaButton.addActionListener(e -> {
-            sendTCP("accetta_" + this.sfidante);
-        });
+        accettaButton.addActionListener(e -> sendTCP("accetta_" + this.sfidante));
+
         rifiutaButton.addActionListener(e -> {
             sendTCP("rifiuta_" + this.sfidante);
             toNormal();
@@ -425,8 +424,8 @@ public class ClientGUI extends JFrame {
     /**
      * Setta la GUI per l'inizio di una partita, creando la connessione UDP ed
      * inviando la richiesta della prima parola
-     * @param player
-     * @param strPORT
+     * @param player stringa id dello sfidante
+     * @param strPORT porta sulla quale creare la connessione UDP
      */
     public void accettaGUI(String player, String strPORT) {
         this.statusSfidaLabel.setVisible(true);
@@ -458,7 +457,7 @@ public class ClientGUI extends JFrame {
     }
 
     public void sendTime(long time) {
-        sendUDP(this.username + "_-1_" + time);
+        sendUDP(this.username + "_time_" + time);
     }
 
     /**
@@ -471,12 +470,9 @@ public class ClientGUI extends JFrame {
      * @param timeSec tempo prima di cancellare in secondi
      */
     public void timerDeleteLabel(JLabel label, int timeSec) {
-        Timer timer = new Timer(timeSec * 1000, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                label.setText("");
-                label.setVisible(false);
-            }
+        Timer timer = new Timer(timeSec * 1000, e -> {
+            label.setText("");
+            label.setVisible(false);
         });
         timer.start();
     }
