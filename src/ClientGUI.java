@@ -72,6 +72,7 @@ public class ClientGUI extends JFrame {
     // componenti di partita
     private JTextField transaltionTextField;
     private JButton sendTradButton;
+    private JButton punteggioButton;
     private String sfidante = null;
 
     /**
@@ -145,6 +146,12 @@ public class ClientGUI extends JFrame {
             String trad = transaltionTextField.getText();
             sendUDP(this.username + "_" + this.indexToSend + "_" + trad);
             this.indexToSend++;
+            transaltionTextField.setText("");
+        });
+        punteggioButton.addActionListener(e -> {
+            String player = amicoTextField.getText();
+            mostra_punteggio(player);
+            amicoTextField.setText("");
         });
     } // fine metodo costruttore ClientGUI
 
@@ -301,6 +308,13 @@ public class ClientGUI extends JFrame {
     /* mostra_punteggio(nickUtente):​ il server restituisce il punteggio di nickUtente (chiamato
        “punteggio utente”) totalizzato in base ai punteggi partita ottenuti in tutte le sfide che ha
        effettuato. */
+    private void mostra_punteggio(String player) {
+        if (player != null) {
+            if (!player.isBlank()) {
+                sendTCP("punteggio_" + player);
+            }
+        }
+    }
 
     // TODO: 20/06/2020 mostra_classifica
     /* mostra_classifica(nickUtente):​ Il server restituisce in formato JSON la classifica calcolata in
@@ -449,6 +463,15 @@ public class ClientGUI extends JFrame {
         sendUDP(this.username + "_" + indexToSend + "_randomWord");
         // randomWord evita una OutOfBoundException nel server UDP
         this.indexToSend++; // verrà richiesta la parola successiva
+
+        try {
+            Thread.sleep(1_000); // per dare al server il tempo necessario per inviare la prima parola
+        } catch (InterruptedException e) {
+            toNormal();
+            this.statusSfidaLabel.setText("Si è verificato un errore!");
+            this.statusSfidaLabel.setVisible(true);
+            timerDeleteLabel(this.statusSfidaLabel, 5);
+        }
 
         this.transaltionTextField.setVisible(true);
         this.sendTradButton.setVisible(true);

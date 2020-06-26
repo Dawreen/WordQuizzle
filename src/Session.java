@@ -16,6 +16,9 @@ public class Session implements Runnable{
 
     private User user; // istanza dell'utente
 
+    private boolean inGame;
+    // TODO: 26/06/2020 set in game status
+
     private boolean shutdown = false;
 
     /**
@@ -54,7 +57,7 @@ public class Session implements Runnable{
                     case "accetta" -> accetta(msgSplit[1]);
                     case "rifiuta" -> rifiuta(msgSplit[1]);
 
-                    case "mostra_punteggio" -> mostra_punteggio();
+                    case "punteggio" -> mostra_punteggio(msgSplit[1]);
                     case "mostra_classifica" -> mostra_classifica();
 
                     default -> msg;
@@ -159,6 +162,7 @@ public class Session implements Runnable{
         try {
             this.output.writeUTF("aggiunto_" + amico);
         } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -207,22 +211,53 @@ public class Session implements Runnable{
         }
     }
     // TODO: 20/06/2020 mostra_punteggio
-    private String mostra_punteggio() {
-        return "mostra_punteggio";
+
+    /**
+     * Il server restituisce il punteggio di player totalizza in base ai punteggi
+     * partita ottenuti un tutte le sfide che ha effettuato.
+     * @param player stringa id del giocatore
+     * @return codice con id e punteggio.
+     */
+    private String mostra_punteggio(String player) {
+        int score = this.server.userInfo.userScore(player);
+        if (score == -1) {
+            return "amicoerr_0";
+        } else {
+            return "punteggio_" + player + "_" + score;
+        }
     }
     // TODO: 20/06/2020 mostra_classifica
     private String mostra_classifica() {
         return "mostra_classifica";
     }
 
-
+    public static int T1 = 15;
+    private boolean risposto = false;
     /**
      * Invio al client la richiesta di sfida da parte di un utente.
+     * Nel caso l'utente non risponda entro T1(15 secondi) la sfida viene considerata come rifiutata.
      * @param player1 stinga che indica l'id dello sfidante.
      * @throws IOException newl caso ci sia stato un errore nell'invio.
      */
     public void richiestaSfida(String player1) throws IOException {
         this.output.writeUTF("sfidato_" + player1);
+        for (int i = 0; i < T1; i++) {
+            //System.out.println("time: " + i);
+            if (!this.risposto) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    output.writeUTF("rifiuta");
+                    Session sessionP1 = this.server.userInfo.getSession(player1);
+                    sessionP1.rifiutato(this.user.getId());
+                }
+            } else {
+                return;
+            }
+        }
+        output.writeUTF("rifiuta");
+        Session sessionP1 = this.server.userInfo.getSession(player1);
+        sessionP1.rifiutato(this.user.getId());
     }
 
     /**
@@ -233,6 +268,7 @@ public class Session implements Runnable{
      * @throws IOException lanciata dal metodo accettato()
      */
     private String accetta(String player1) throws IOException {
+        this.risposto = true;
         Session sessionP1 = this.server.userInfo.getSession(player1);
         int port = (int)((Math.random())*((65535 - 1024) + 1)) + 1024;
         sessionP1.accettato(this.user.getId(), port);
@@ -257,6 +293,7 @@ public class Session implements Runnable{
      * @throws IOException lanciata dal metodo rifiutato()
      */
     private String rifiuta(String player1) throws IOException {
+        this.risposto = true;
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.rifiutato(this.user.getId());
         return "rifiuta";

@@ -63,10 +63,6 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                 case "sfidato":
                     sfidato(msgSplit[1]);
                     break;
-                case "richiestaout":
-                    // TODO: 24/06/2020 inizio timer T1
-                    attesaRisposta();
-                    break;
                 case "accetta": // hai accettato una sfida
                     accetta(msgSplit[1], msgSplit[2]);
                     break;
@@ -74,6 +70,7 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     gui.statusSfidaLabel.setText("Hai rifiutato la sfida!");
                     gui.statusSfidaLabel.setVisible(true);
                     gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
+                    gui.toNormal();
                     break;
                 case "accettato": // l'altro giocatore ha accettato
                     accettato(msgSplit[1], msgSplit[2]);
@@ -98,6 +95,11 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     gui.statusSfidaLabel.setVisible(true);
                     gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
                     break;
+                case "punteggio":
+                    gui.resultFriendLabel.setText(msgSplit[1] + " ha " + msgSplit[2] + " punti.");
+                    gui.resultFriendLabel.setVisible(true);
+                    gui.timerDeleteLabel(gui.resultFriendLabel, 5);
+                    break;
             }
         } while (!shutdown);
         return null;
@@ -108,7 +110,6 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
      * @param err stringa che indica il codice di errore
      */
     private void amicoERR(String err) {
-        System.out.println("in error amico");
         if (err.equals("0")) {
             // l'amico che si cerca di aggiungere non esiste
             gui.resultFriendLabel.setText("L'utente non esiste!");
@@ -190,12 +191,6 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
         gui.friendList = new JList();
         gui.friendList.setModel(listModel);
         gui.allFriendScrollPanel.setViewportView(gui.friendList);
-    }
-
-    private void attesaRisposta() {
-        this.gui.statusSfidaLabel.setText("in attesa di risposta...");
-        this.gui.statusSfidaLabel.setVisible(true);
-        // TODO: 24/06/2020 start T1 timer
     }
 
     /**

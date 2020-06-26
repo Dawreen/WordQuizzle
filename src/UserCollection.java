@@ -227,4 +227,12 @@ public class UserCollection {
         this.allUsers.get(user2).addFriend(user1);
         updateFile();
     }
+
+    public int userScore(String user) {
+        if (this.allUsers.containsKey(user)) {
+            return this.allUsers.get(user).getScore();
+        } else {
+            return -1;
+        }
+    }
 }

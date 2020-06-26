@@ -9,7 +9,6 @@ import java.net.DatagramSocket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Classe che esegue il lato server della sfida.
