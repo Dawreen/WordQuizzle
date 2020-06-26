@@ -38,7 +38,7 @@ public abstract class UDPServer implements Runnable {
                 } catch (SocketTimeoutException ex) {
                     if (isShutDown) return;
                 } catch (IOException ex) {
-                    System.err.println("IOexception in UDPServer 41");
+                    System.err.println("IOexception in UDPServer (line41)");
                 }
             }// end while
         } catch (SocketException ex) {
@@ -50,7 +50,7 @@ public abstract class UDPServer implements Runnable {
      * metodo da implementare per inviare le risposte.
      * @param socket sulla quale avviene la communicazione UDP
      * @param packet pacchetto che si è ricevuto
-     * @throws IOException
+     * @throws IOException lanciata nel caso ci sia stato un errore sulla DatagramSocket.send(packet)
      */
     public abstract void respond(DatagramSocket socket, DatagramPacket packet) throws IOException;
 

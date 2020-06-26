@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 import java.sql.Timestamp;
 
 /**
@@ -11,6 +12,7 @@ import java.sql.Timestamp;
 public class BackgroundReceiverUDP extends SwingWorker<String, String> {
     private ClientGUI gui;
     private DatagramSocket socket;
+    private DatagramPacket lastPacket;
 
     public BackgroundReceiverUDP(ClientGUI gui, DatagramSocket socket) {
         this.gui = gui;
@@ -40,13 +42,29 @@ public class BackgroundReceiverUDP extends SwingWorker<String, String> {
                     gui.sendTime(time);
                     return null;
                 }
+                if(s.equals("FINEtimeout")) { // messaggio di timeOut della partita
+                    gui.sendTime(UDPGameServer.T2);
+                    return null;
+                }
                 // udpLabel è dove vengono mostrate le parole sulla GUI
                 gui.udpLabel.setText(s);
                 gui.udpLabel.setVisible(true);
+            } catch (SocketTimeoutException ex) {
+                /* nel caso non si sia avuta una risposta dal server
+                 si invia nuovamente l'ultimo pacchetto. */
+                try {
+                    socket.send(lastPacket);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void setLastMessage(DatagramPacket packet) {
+        this.lastPacket = packet;
     }
 
     /**

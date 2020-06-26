@@ -27,6 +27,7 @@ public class ClientGUI extends JFrame {
 
     //UDP connection
     private int UDP_PORT;
+    private BackgroundReceiverUDP receiverUDP;
     private DatagramSocket socketUDP;
     private InetAddress addressUDP;
 
@@ -204,8 +205,8 @@ public class ClientGUI extends JFrame {
         }
 
         //
-        BackgroundReceiverUDP receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
-        receiverUDP.execute();
+        this.receiverUDP = new BackgroundReceiverUDP(this, this.socketUDP);
+        this.receiverUDP.execute();
     }
     private void sendUDP(String msg) {
         try {
@@ -214,6 +215,9 @@ public class ClientGUI extends JFrame {
             DatagramPacket output
                     = new DatagramPacket(data, data.length, this.addressUDP, this.UDP_PORT);
             this.socketUDP.send(output);
+            if (this.receiverUDP != null) {
+                this.receiverUDP.setLastMessage(output);
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -304,10 +308,11 @@ public class ClientGUI extends JFrame {
         }
     }
 
-    // TODO: 20/06/2020 mostra_punteggio
-    /* mostra_punteggio(nickUtente):​ il server restituisce il punteggio di nickUtente (chiamato
-       “punteggio utente”) totalizzato in base ai punteggi partita ottenuti in tutte le sfide che ha
-       effettuato. */
+    /**
+     * il server restituisce il punteggio di nickUtente (chiamato “punteggio utente”) totalizzato
+     * in base ai punteggi partita ottenuti in tutte le sfide che ha effettuato.
+     * @param player stringa id del giocatore del quale si vuole sapere il punteggio
+     */
     private void mostra_punteggio(String player) {
         if (player != null) {
             if (!player.isBlank()) {
@@ -458,20 +463,19 @@ public class ClientGUI extends JFrame {
         this.UDP_PORT = Integer.parseInt(strPORT);
 
         startUDPconnection();
-
-        this.indexToSend = 0;
-        sendUDP(this.username + "_" + indexToSend + "_randomWord");
-        // randomWord evita una OutOfBoundException nel server UDP
-        this.indexToSend++; // verrà richiesta la parola successiva
-
-        try {
-            Thread.sleep(1_000); // per dare al server il tempo necessario per inviare la prima parola
-        } catch (InterruptedException e) {
+        try { // setting timeout to resend message
+            this.socketUDP.setSoTimeout(1_000);
+        } catch (SocketException e) {
             toNormal();
             this.statusSfidaLabel.setText("Si è verificato un errore!");
             this.statusSfidaLabel.setVisible(true);
             timerDeleteLabel(this.statusSfidaLabel, 5);
         }
+
+        this.indexToSend = 0;
+        sendUDP(this.username + "_" + indexToSend + "_randomWord");
+        // randomWord evita una OutOfBoundException nel server UDP
+        this.indexToSend++; // verrà richiesta la parola successiva
 
         this.transaltionTextField.setVisible(true);
         this.sendTradButton.setVisible(true);

@@ -17,7 +17,6 @@ public class Session implements Runnable{
     private User user; // istanza dell'utente
 
     private boolean inGame;
-    // TODO: 26/06/2020 set in game status
 
     private boolean shutdown = false;
 
@@ -115,6 +114,7 @@ public class Session implements Runnable{
      */
     private String logout() {
         if (user != null) {
+            System.out.println(getUserID() + " ha fatto logout.");
             this.server.userInfo.removeOnline(this.user.getId()); // rimozione dell'utente dagli user online
             this.user = null;
             this.shutdown = true; // terminazione di session
@@ -192,14 +192,18 @@ public class Session implements Runnable{
      * @throws IOException lanciata dal metodo richiestaSfida
      */
     private String sfida(String player2) throws IOException {
+        this.inGame = true;
         if (this.user == null) return "loginerr_0";
         else {
             if (this.user.getFriends().contains(player2)) {
                 if (this.server.userInfo.checkOnline(player2)) {
                     Session sessionP2 = this.server.userInfo.getSession(player2);
-                    sessionP2.richiestaSfida(this.user.getId());
-
-                    return "richiestaout";
+                    if (sessionP2.isInGame()) {
+                        return "sfidaerr_4"; // il giocatore e impegnato in un'altra sfida
+                    } else {
+                        sessionP2.richiestaSfida(this.user.getId());
+                        return "richiestaout";
+                    }
                 } else {
                     // l'utente che si vuole sfidare è offline
                     return "sfidaerr_2";
@@ -210,7 +214,6 @@ public class Session implements Runnable{
             }
         }
     }
-    // TODO: 20/06/2020 mostra_punteggio
 
     /**
      * Il server restituisce il punteggio di player totalizza in base ai punteggi
@@ -240,6 +243,7 @@ public class Session implements Runnable{
      * @throws IOException newl caso ci sia stato un errore nell'invio.
      */
     public void richiestaSfida(String player1) throws IOException {
+        this.inGame = true;
         this.output.writeUTF("sfidato_" + player1);
         for (int i = 0; i < T1; i++) {
             //System.out.println("time: " + i);
@@ -250,6 +254,7 @@ public class Session implements Runnable{
                     output.writeUTF("rifiuta");
                     Session sessionP1 = this.server.userInfo.getSession(player1);
                     sessionP1.rifiutato(this.user.getId());
+                    this.inGame = false;
                 }
             } else {
                 return;
@@ -258,6 +263,7 @@ public class Session implements Runnable{
         output.writeUTF("rifiuta");
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.rifiutato(this.user.getId());
+        this.inGame = false;
     }
 
     /**
@@ -293,6 +299,7 @@ public class Session implements Runnable{
      * @throws IOException lanciata dal metodo rifiutato()
      */
     private String rifiuta(String player1) throws IOException {
+        this.inGame = false;
         this.risposto = true;
         Session sessionP1 = this.server.userInfo.getSession(player1);
         sessionP1.rifiutato(this.user.getId());
@@ -305,6 +312,7 @@ public class Session implements Runnable{
      * @throws IOException in caso di errore di connessione del metodo write()
      */
     public void rifiutato(String player2) throws IOException {
+        this.inGame = false;
         this.output.writeUTF("rifiutato_" + player2);
     }
 
@@ -325,10 +333,11 @@ public class Session implements Runnable{
      * @throws IOException in caso di errore di connessione del metodo write()
      */
     public void vincitore() throws IOException {
+        this.inGame = false;
         this.output.writeUTF("vincitore");
         this.user.addPoints();
         this.server.userInfo.updateFile();
-        // TODO: 25/06/2020 aggioranre punteggio tutti quelli online?
+        // TODO: 25/06/2020 aggioranre classifica tutti quelli online?
     }
 
     /**
@@ -336,6 +345,7 @@ public class Session implements Runnable{
      * @throws IOException in caso di errore di connessione del metodo write()
      */
     public void perdente() throws IOException {
+        this.inGame = false;
         this.output.writeUTF("perdente");
     }
 
@@ -344,6 +354,7 @@ public class Session implements Runnable{
      * @throws IOException in caso di errore di connessione del metodo write()
      */
     public void pareggio() throws IOException {
+        this.inGame = false;
         this.output.writeUTF("pareggio");
     }
 
@@ -353,5 +364,9 @@ public class Session implements Runnable{
      */
     public String getUserID() {
         return this.user.getId();
+    }
+
+    public boolean isInGame() {
+        return this.inGame;
     }
 }

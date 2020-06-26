@@ -79,13 +79,13 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
                     rifiutato(msgSplit[1]);
                     break;
                 case "vincitore": // hai vinto l'utima parita
-                    // TODO: 25/06/2020 aggiorna punteggio
+                    // TODO: 25/06/2020 aggiorna classifica
                     gui.statusSfidaLabel.setText("Hai vinto!");
                     gui.statusSfidaLabel.setVisible(true);
                     gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
                     break;
                 case "perdente": // hai perso l'ultima partita
-                    // TODO: 25/06/2020 aggiorna punteggio
+                    // TODO: 25/06/2020 aggiorna classifica
                     gui.statusSfidaLabel.setText("Hai perso.");
                     gui.statusSfidaLabel.setVisible(true);
                     gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
@@ -142,7 +142,11 @@ public class BackgroundReceiverTCP extends SwingWorker<String, String> {
             // l'utente ha rifiutato la sfida
             gui.statusSfidaLabel.setText("Utente ha rifiutato la sfida!");
             gui.statusSfidaLabel.setVisible(true);
-            //gui.rifiutaGUI();
+        }
+        if (err.equals("4")) {
+            // l'utente è impegnato in un'altra partita
+            gui.statusSfidaLabel.setText("Utente è in un'altra partita.");
+            gui.statusSfidaLabel.setVisible(true);
         }
         gui.timerDeleteLabel(gui.statusSfidaLabel, 5);
     }

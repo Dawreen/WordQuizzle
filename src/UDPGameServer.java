@@ -9,12 +9,13 @@ import java.net.DatagramSocket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Timer;
 
 /**
  * Classe che esegue il lato server della sfida.
  */
 public class UDPGameServer extends UDPServer{
-    public final static int DEFAUL_PORT = 7;
+    public static final int T2 = 30_000; // tempo massimo di una partita
 
     private final String[] words;
 
@@ -76,8 +77,12 @@ public class UDPGameServer extends UDPServer{
                 this.p2Finito = true;
             }
         }
+        if (index == 0) { // al primo messaggio di ogni giocatore viene fatto partire il timer
+            Timer timer = new Timer();
+            timer.schedule(new GameTimer(socket, packet.getAddress(), packet.getPort()), T2, 2_000);
+        }
         String trad = null;
-        if (!trdIsBlank) trad = sSplit[2]; // traduione della parola precedentemente inviata
+        if (!trdIsBlank) trad = sSplit[2]; // traduzione della parola precedentemente inviata
 
         if (index > 0) { // nel primo messaggio dal client non vi è una traduzione utile
             if (currentPlayer.equals(p1ID) && !this.p1Finito) {
